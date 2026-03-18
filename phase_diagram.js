@@ -574,6 +574,69 @@
       });
     }
 
+    fitAffine(valueAt) {
+      const samples = [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 }
+      ];
+      const values = samples.map((point) => valueAt(point.x, point.y));
+      if (values.some((value) => !Number.isFinite(value))) {
+        return null;
+      }
+      const c = values[0];
+      const a = values[1] - c;
+      const b = values[2] - c;
+      if (Math.abs(values[3] - (a + b + c)) > 1e-6) {
+        return null;
+      }
+      return { a, b, c };
+    }
+
+    affineNullclineSegment(valueAt) {
+      const coeffs = this.fitAffine(valueAt);
+      if (!coeffs) {
+        return null;
+      }
+      const { a, b, c } = coeffs;
+      const { xRange, yRange } = this.options;
+      const hits = [];
+      const addHit = (x, y) => {
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !this.inBounds(x, y)) {
+          return;
+        }
+        if (!hits.some((point) => Math.hypot(point.x - x, point.y - y) < 1e-6)) {
+          hits.push({ x, y });
+        }
+      };
+
+      if (Math.abs(b) > 1e-10) {
+        addHit(xRange[0], -(a * xRange[0] + c) / b);
+        addHit(xRange[1], -(a * xRange[1] + c) / b);
+      }
+      if (Math.abs(a) > 1e-10) {
+        addHit(-(b * yRange[0] + c) / a, yRange[0]);
+        addHit(-(b * yRange[1] + c) / a, yRange[1]);
+      }
+      if (hits.length < 2) {
+        return null;
+      }
+
+      let bestPair = null;
+      let bestDist = -1;
+      for (let i = 0; i < hits.length; i += 1) {
+        for (let j = i + 1; j < hits.length; j += 1) {
+          const dist = Math.hypot(hits[i].x - hits[j].x, hits[i].y - hits[j].y);
+          if (dist > bestDist) {
+            bestDist = dist;
+            bestPair = [hits[i], hits[j]];
+          }
+        }
+      }
+      return bestPair;
+    }
+
     buildSvg() {
       const { width, height, style, vectorField, trajectories } = this.options;
       const svg = createNode("svg", {
@@ -871,18 +934,37 @@
 
     drawNullclines(svg) {
       const { nullclineColor } = this.options.style;
-      const dxSegments = this.contourSegments((x, y) => this.evaluate(x, y).dx, 120, 120);
-      dxSegments.forEach((segment) => svg.appendChild(this.segment(segment, nullclineColor, 4)));
-      const dyParts = this.traceNullclineByX((x, y) => this.evaluate(x, y).dy, 360);
-      if (dyParts.length) {
-        dyParts.forEach((part) => svg.appendChild(this.pathFromPoints(part, nullclineColor, 4)));
+      const dxValue = (x, y) => this.evaluate(x, y).dx;
+      const dyValue = (x, y) => this.evaluate(x, y).dy;
+
+      const dxLine = this.affineNullclineSegment(dxValue);
+      if (dxLine) {
+        svg.appendChild(this.segment(dxLine, nullclineColor, 4));
       } else {
-        const dySegments = this.contourSegments((x, y) => this.evaluate(x, y).dy, 120, 120);
-        dySegments.forEach((segment) => svg.appendChild(this.segment(segment, nullclineColor, 4)));
+        const dxParts = this.traceNullclineByX(dxValue, 360);
+        if (dxParts.length) {
+          dxParts.forEach((part) => svg.appendChild(this.pathFromPoints(part, nullclineColor, 4)));
+        } else {
+          const dxSegments = this.contourSegments(dxValue, 120, 120);
+          dxSegments.forEach((segment) => svg.appendChild(this.segment(segment, nullclineColor, 4)));
+        }
       }
 
-      const xIntercept = this.interceptOnXAxis((x, y) => this.evaluate(x, y).dy);
-      const yIntercept = this.interceptOnYAxis((x, y) => this.evaluate(x, y).dy);
+      const dyLine = this.affineNullclineSegment(dyValue);
+      if (dyLine) {
+        svg.appendChild(this.segment(dyLine, nullclineColor, 4));
+      } else {
+        const dyParts = this.traceNullclineByX(dyValue, 360);
+        if (dyParts.length) {
+          dyParts.forEach((part) => svg.appendChild(this.pathFromPoints(part, nullclineColor, 4)));
+        } else {
+          const dySegments = this.contourSegments(dyValue, 120, 120);
+          dySegments.forEach((segment) => svg.appendChild(this.segment(segment, nullclineColor, 4)));
+        }
+      }
+
+      const xIntercept = this.interceptOnXAxis(dyValue);
+      const yIntercept = this.interceptOnYAxis(dyValue);
       if (xIntercept !== null && !nearlyEqual(xIntercept, 0, 1e-3)) {
         svg.appendChild(this.label(this.toScreenX(xIntercept), this.toScreenY(0) + 26, this.formatNumber(xIntercept), 22, "#111111", "middle"));
       }
