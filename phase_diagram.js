@@ -482,15 +482,33 @@
       const { xRange } = this.options;
       const parts = [];
       let current = [];
+      let pending = [];
       for (let i = 0; i <= samples; i += 1) {
         const x = xRange[0] + ((xRange[1] - xRange[0]) * i) / samples;
         const y = this.findRootAlongY(x, valueAt, 50);
         if (y === null || !Number.isFinite(y)) {
-          if (current.length > 1) {
-            parts.push(current);
+          if (current.length) {
+            pending.push({ x, y: null });
+            if (pending.length > 2) {
+              if (current.length > 1) {
+                parts.push(current);
+              }
+              current = [];
+              pending = [];
+            }
           }
-          current = [];
         } else {
+          if (pending.length) {
+            pending.forEach((miss, index) => {
+              const t = (index + 1) / (pending.length + 1);
+              const prev = current[current.length - 1];
+              current.push({
+                x: miss.x,
+                y: prev.y + (y - prev.y) * t
+              });
+            });
+            pending = [];
+          }
           current.push({ x, y });
         }
       }
@@ -504,15 +522,33 @@
       const { yRange } = this.options;
       const parts = [];
       let current = [];
+      let pending = [];
       for (let i = 0; i <= samples; i += 1) {
         const y = yRange[0] + ((yRange[1] - yRange[0]) * i) / samples;
         const x = this.findRootAlongX(y, valueAt, 50);
         if (x === null || !Number.isFinite(x)) {
-          if (current.length > 1) {
-            parts.push(current);
+          if (current.length) {
+            pending.push({ x: null, y });
+            if (pending.length > 2) {
+              if (current.length > 1) {
+                parts.push(current);
+              }
+              current = [];
+              pending = [];
+            }
           }
-          current = [];
         } else {
+          if (pending.length) {
+            pending.forEach((miss, index) => {
+              const t = (index + 1) / (pending.length + 1);
+              const prev = current[current.length - 1];
+              current.push({
+                x: prev.x + (x - prev.x) * t,
+                y: miss.y
+              });
+            });
+            pending = [];
+          }
           current.push({ x, y });
         }
       }
