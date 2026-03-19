@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="eco-math.css">
+<title>位相圖</title>
+
+<!-- KaTeX 수식 렌더링 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script>
+(function() {
+  function renderAllMath() {
+    document.querySelectorAll('span.math').forEach(function(el) {
+      katex.render(el.textContent, el, {throwOnError: false, displayMode: false});
+    });
+  }
+  var script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+  script.onload = renderAllMath;
+  document.head.appendChild(script);
+})();
+</script>
+
+<style>
+  body {
+    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2em;
+    line-height: 1.8;
+    color: #222;
+    background: #fff;
+  }
+  h1 { font-size: 1.8em; border-bottom: 2px solid #333; padding-bottom: .3em; margin-top: 1.5em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid #999; padding-bottom: .2em; margin-top: 1.3em; }
+  h3 { font-size: 1.2em; margin-top: 1.1em; color: #444; }
+  h4, h5, h6 { font-size: 1.05em; margin-top: 1em; color: #555; }
+  p  { margin: .5em 0 .8em; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em auto;
+    font-size: 0.95em;
+  }
+  td, th {
+    border: 1px solid #aaa;
+    padding: 6px 10px;
+    vertical-align: top;
+  }
+  table p {
+    margin: 0;
+  }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  figure.hml-figure {
+    margin: 1.5em auto;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .img-placeholder {
+    background: #f0f0f0;
+    border: 1px dashed #aaa;
+    padding: 1em;
+    text-align: center;
+    color: #888;
+    margin: 1em 0;
+  }
+  .footnotes {
+    font-size: 0.85em;
+    color: #555;
+  }
+  .footnotes li { margin-bottom: .4em; }
+  sup a { color: #0066cc; text-decoration: none; }
+  sup a:hover { text-decoration: underline; }
+  .katex-display { overflow-x: auto; overflow-y: hidden; }
+</style>
+</head>
+<body>
+
+
+<h3>位相圖(phase diagram) 분석</h3>
+
+
+<h4>1. 단일방정식인 경우 </h4>
+<p style="text-align:justify">다음과 같은 미분방정식을 생각해 보자.</p>
+<p><span class="math">\, \dfrac{dy(t)}{dt} \,=\,F(y)</span></p>
+<p style="text-align:justify">위상도 분석은 미분방정식의 해를 구하기 어려울 때 기하학적으로 해의 의미를 해석하는데 유용하게 사용된다. 특히 경제학에서 그림의 형태를 보고 해의 수렴 또는 발산을 판정하는 데 사용된다.</p>
+<h5> 위상도</h5>
+<p style="text-align:justify">수평축을 <span class="math">y(t)</span>, 수직축을 <span class="math">\, \dfrac{dy(t)}{dt}</span>로 놓고 <span class="math">y</span>와 <span class="math">\, \dfrac{dy}{dt}</span>의 관계를 표현한 것. </p>
+<p style="text-align:justify">ㅇ 위상선(phase line)</p>
+<p style="text-align:justify"><span class="math">y</span>와 <span class="math">\, \dfrac{dy}{dt}</span> 의 관계를 나타내는 선</p>
+<p style="text-align:justify"><span class="math">\, \dfrac{dy}{dt} &gt;0</span> 일 때 <span class="math">y</span>는 시간이 흐름에 따라 증가함을 의미. 그래프에서는 <span class="math">y</span> 선상에 왼쪽에서 오른쪽으로 화살표를 표시한다. </p>
+<p style="text-align:justify"><span class="math">\, \dfrac{dy}{dt} &lt;0</span> 일 때 <span class="math">y</span>는 시간이 흐름에 따라 감소함을 의미. 그래프에서는 <span class="math">y</span> 선상에 오른쪽에서 왼쪽으로 화살표를 표시한다. </p>
+<p style="text-align:justify"><span class="math">\, \dfrac{dy}{dt} \,=\,0</span> 인 점을 임계점(critical point), 또는 균형점(equilibrium point)이라 한다. </p>
+<p style="text-align:justify">특히 경제학에서는 이 점을 정상상태 균형(steady-state equilibrium)이라 한다.<sup><a id="fnref1" href="#fn1">[1]</a></sup> </p>
+<p style="text-align:justify"><span class="math">\, \dfrac{dy}{dt} \,=\,0</span> 인 점에서 화살표가 모이면 해의 수렴을 의미하므로 안정상태 균형(stable equilibrium)이라 한다. <span class="math">\, \dfrac{dy}{dt} \,=\,0</span> 인 점에서 화살표가 모이지 않는다면 해의 발산을 의미하므로 해는 불안정 상태에 있음을 알 수 있다. </p>
+<p style="text-align:justify">즉, 교차점에서 위상선의 기울기가 음(-)일 때 교차점은 안정적이고, 교차점에서 위상선의 기울기가 양(+)일 때 교차점은 불안정함을 알 수 있다. </p>
+<p style="text-align:justify"><span class="math">y*</span>가 균형점이고 <span class="math">\dfrac{df(y*)}{dy} &lt;0</span> ⇒ 국지적으로 안정적</p>
+<p style="text-align:justify"><span class="math">y*</span>가 균형점이고 <span class="math">\dfrac{df(y*)}{dy} &gt;0</span> ⇒ 불안정</p>
+<p style="text-align:left">미분방정식이 안정상태에 있다면 <span class="math">y*</span>의 근방에서 <span class="math">y&lt;y*</span> 일 때 <span class="math">\, \dfrac{dy}{dt} &gt;0</span> , 그리고 <span class="math">y&gt;y*</span> 일 때 <span class="math">\, \dfrac{dy}{dt} &lt;0</span> 이다.</p>
+<p style="text-align:left">미분방정식이 불안정상태에 있다면 <span class="math">y*</span>의 근방에서 <span class="math">y&lt;y*</span> 일 때 <span class="math">\, \dfrac{dy}{dt} &lt;0</span> , 그리고 <span class="math">y&gt;y*</span> 일 때 <span class="math">\, \dfrac{dy}{dt} &gt;0</span> 이다.</p>
+<p style="text-align:justify">예) 미분방정식의 그래프가 (그림 1)과 같은 경우를 고려해 보자. <span class="math">\, \dfrac{dy}{dt} =0</span> 인 것은 x축을 의미하므로 x축 아래 부분에서는 우에서 좌로 화살표를 표시하고 x축 위 부분에서는 좌에서 우로 화살표를 표시한다. </p>
+<p style="text-align:justify"><div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_001.gif 연결 필요]</div>
+</p>
+<p style="text-align:justify">         <span class="math">\dfrac{dy(t)}{dt}</span>        </p>
+<p style="text-align:justify">                                                                              <span class="math">y(t)</span></p>
+<p style="text-align:justify">(그림 1)에는  a,  b, 2 개의 균형점이 존재한다.</p>
+<p style="text-align:justify">b는 시간이 흘러도 변하지 않고 안정적이므로 국부적으로 안정상태임(locally stable)을 알 수 있다. </p>
+<p style="text-align:justify">a에서 근방으로 조금만 이탈해도 오른쪽으로 이동하므로 a는 시간이 흐름에 따라 안정적(unstable)이지 않다. </p>
+<p style="text-align:justify">아래 (그림 2)를 보자.</p>
+<p style="text-align:justify"><div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_002.gif 연결 필요]</div>
+</p>
+<p style="text-align:justify">           <span class="math">\dfrac{dy(t)}{dt}</span>                         </p>
+<p style="text-align:justify">                                                                   <span class="math">y(t)</span>                                                                                                                                                                                   </p>
+<p style="text-align:justify">                                                                                      <span class="math">y&lt;y*</span> 일 때 <span class="math">\, \dfrac{dy}{dt} &gt;0</span> , 그리고 <span class="math">y&gt;y*</span> 일 때 <span class="math">\, \dfrac{dy}{dt} &gt;0</span> 이다. 따라서 <span class="math">y_{*}</span>는 불안정함을 알 수 있다. 이와 같이 접하는 경우를 안장점(saddle point)라고 한다. 안장점도 불안정한 균형이다.</p>
+
+
+<h4 style="text-align:justify"><br>2. 연립미분방정식인 경우 위상도(상태변수가 2 이상)</h4>
+<p style="text-align:left">다음의 연립미분방정식을 고려한다.</p>
+<p style="text-align:left">y’(<span class="math">t</span>) = A(<span class="math">t</span>)y(<span class="math">t</span>)+v(<span class="math">t</span>)</p>
+<p style="text-align:left">위상도 분석은 A가 2×2 행렬인 경우에 대해서만 가능하다. 그 이상인 경우는 그림으로 분석하기 곤란하기 때문이다.</p>
+<p style="text-align:left">이 경우는 예를 들어 설명하는 것이 편리하다.</p>
+<p style="text-align:left">예 1) </p>
+<p style="text-align:left"><span class="math">\dfrac{dx}{dt} \,=\,-2x</span></p>
+<p style="text-align:left"><span class="math">\dfrac{dy}{dt} \,=2x-4y+32\,</span></p>
+<p style="text-align:left">(풀이)</p>
+<p style="text-align:justify">정상상태(steady state)에서 상태변수들은 시간에 따라 변하지 않으므로</p>
+<p style="text-align:justify"><span class="math">\dfrac{dx}{dt} =0</span> 이고 <span class="math">\dfrac{dy}{dt} =0</span> 이다. </p>
+<p style="text-align:justify">각각의 경우에 대해 고려해 보자.</p>
+<p style="text-align:justify">(i)  <span class="math">\dfrac{dx}{dt} \,=-2x\,=\,0</span>  </p>
+<p style="text-align:justify"><span class="math">x\,=\,0</span> 이므로 (그림 3)에서 y 축을 의미. </p>
+<p style="text-align:justify"><span class="math">\dfrac{dx}{dt} \,&gt;0</span> ⇒ <span class="math">\dfrac{dx}{dt} \,=-2x\,&gt;\,0</span> ⇒ <span class="math">x\,&lt;0</span></p>
+<p style="text-align:justify">즉 x가 0보다 작은 구간(y 축의 좌측)에서는 x는 시간의 증가에 따라 증가한다. 이는 (그림 3)의 y축 좌측의 화살표 방향으로 표시된다. x가 증가하는 것이므로 화살표의 방향은 x축을 따라 좌에서 우로 흐르는 모양이 된다.<sup><a id="fnref2" href="#fn2">[2]</a></sup> </p>
+<p style="text-align:justify"><span class="math">\dfrac{dx}{dt} \,&lt;0</span> ⇒ <span class="math">x\,&gt;0</span></p>
+<p style="text-align:justify">x가 0보다 큰 구간(y축의 우측)에서는 x는 시간의 증가에 따라 감소한다. 이는 (그림 a)의 y축 우측의 화살표 방향으로 표시된다. x가 감소하는 것이므로 화살표의 방향은 x축을 따라 우에서 좌로 흐르는 모양이 된다.</p>
+<p style="text-align:justify">(ii) <span class="math">\dfrac{dy}{dt} \,=2x-4y+32\,=\,0</span></p>
+<p style="text-align:justify"><span class="math">2x-4y+32\,=\,0</span> 은 (그림 4)에서 파란선이다. </p>
+<p style="text-align:justify"><span class="math">\dfrac{dy}{dt} \,&gt;\,0</span> ⇒ <span class="math">2x-4y+32\,&gt;\,0</span></p>
+<p style="text-align:justify">이 부등식을 만족시키는 점들은 (그림 4)에서 우하 부분이다.<sup><a id="fnref3" href="#fn3">[3]</a></sup> 따라서 우하에서는 시간이 지남에 따라 y는 증가하고 이는 그림에서 y축을 따라 아래서 위로 증가하는 방향으로 화살표가 그려진다. </p>
+<p style="text-align:justify"><span class="math">\dfrac{dy}{dt} \,&lt;\,0</span> ⇒ <span class="math">2x-4y+32\,&lt;\,0</span></p>
+<p style="text-align:justify">좌상에서는 시간이 지남에 따라 y는 감소하고<sup><a id="fnref4" href="#fn4">[4]</a></sup> 이는 그림에서 y축을 따라 위에서 아래로 감소하는 방향으로 화살표가 그려진다.</p>
+<p style="text-align:justify"><div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_003.gif 연결 필요]</div>
+  <div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_004.gif 연결 필요]</div>
+</p>
+<p style="text-align:justify">              (그림 3)                                (그림 4)</p>
+<p style="text-align:justify">(i), (ii) 두 가지 경우를 모두 고려하여 화살표를 그리면 (그림 5)와 같다. 두 개의 빨간색 화살표의 합이 벡터의 방향을 나타내는 초록색 화살표이다. 기준선에서 화살표의 방향이 바뀌는 점에 유의하면서 해의 경로를 그리면 굵은 고동색 화살표의 모양이 된다. 고동색 화살표는 여러 가지 초기값에 대응하는 해의 경로를 표시한 것이다.</p>
+<p style="text-align:center"><div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_005.gif 연결 필요]</div>
+</p>
+<p style="text-align:justify">                                      (그림 5)</p>
+<p style="text-align:justify"><span class="math">\dfrac{dx}{dt} \,=-2x\,=\,0</span>, <span class="math">\dfrac{dy}{dt} \,=2x-4y+32\,=\,0</span> 두 개의 선이 구간을 네 부분으로 구분한다.</p>
+<p style="text-align:justify">각 구간에 따른 화살표의 방향은 앞의 결과를 합쳐서 그리면 된다. 초록색 화살표는 빨간색 화살표들의 벡터합을 의미한다. 시간의 경과에 따라 초록색 화살표의 방향으로 상태변화가 이루어짐을 알 수 있다. </p>
+<p style="text-align:justify">상태 <span class="math">x(t),\,y(t)</span>는 임의의 점에서 시작해도 (0, 8) 점을 향해 흐름을 알 수 있고, 이 점은 안정점이 된다. 결국 (그림 c)의 고동색 화살표와 같은 방향으로 상태변화가 이루어진다.</p>
+<p style="text-align:justify">실제 상변화도를 그려보면 (그림 6)과 같다.<sup><a id="fnref5" href="#fn5">[5]</a></sup></p>
+<p style="text-align:center"><img src="media/phase-diagram_006.jpg" style="max-width:100%;">
+</p>
+<p style="text-align:justify">예 2) 지역 축적형 오염모형(local stock pollution model)<sup><a id="fnref6" href="#fn6">[6]</a></sup></p>
+<p style="text-align:justify"><span class="math">\dfrac{dy}{dt} =x(t)-0.5y(t)</span></p>
+<p style="text-align:justify"><span class="math">\dfrac{dx}{dt} =0.5x(t)+0.5y(t)\,-\,15</span></p>
+<p style="text-align:justify"><span class="math">y(t)</span> ; 대기오염의 규모</p>
+<p style="text-align:justify"><span class="math">x(t)</span> ; 배출가스의 양</p>
+<p style="text-align:justify">(풀이) 정상상태(steady state)에서 상태변수들은 시간에 따라 변하지 않으므로</p>
+<p style="text-align:justify"><span class="math">\dfrac{dy}{dt} =0</span> , <span class="math">\dfrac{dx}{dt} =0</span> 인 선들을 그리면 (그림 a), (그림 b)와 같다.</p>
+<p style="text-align:justify"><span class="math">\dfrac{dy}{dt} =x(t)-0.5y(t)\,=\,0</span>          ⇒ <span class="math">y\,=\,2x</span> ....................①</p>
+<p style="text-align:justify"><span class="math">\dfrac{dx}{dt} =0.5x(t)+0.5y(t)\,-\,15\,=\,0</span>  ⇒ <span class="math">y\,=\,-x+30</span> ............②</p>
+<p style="text-align:justify">(그림 a)에서</p>
+<p style="text-align:justify"><span class="math">y\,=\,2x</span> 의 좌상쪽에 있는 점들은 <span class="math">y\,&gt;\,2x</span><sup><a id="fnref7" href="#fn7">[7]</a></sup>, <span class="math">y\,&gt;\,2x</span> 이므로 ①에서 <span class="math">\dfrac{dy}{dt} &lt;0</span></p>
+<p style="text-align:justify">시간이 지남에 따라 y는 감소한다.</p>
+<p style="text-align:justify"><span class="math">y\,=\,2x</span> 의 우하쪽에 있는 점들은 <span class="math">y\,&lt;\,2x</span><sup><a id="fnref8" href="#fn8">[8]</a></sup>, <span class="math">y\,&lt;\,2x</span> 이므로 ①에서 <span class="math">\dfrac{dy}{dt} &gt;0</span></p>
+<p style="text-align:justify">시간이 지남에 따라 y는 증가한다.</p>
+<p style="text-align:justify">화살표는 항상 시간이 지남에 따라 상태변수의 증감을 의미. 시간의 감소는 고려하지 않는다.</p>
+<p style="text-align:justify">화살표의 방향이 y축을 따라 평행하게 그려짐에 유의</p>
+<p style="text-align:justify"> <div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_007.gif 연결 필요]</div>
+  <div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_008.gif 연결 필요]</div>
+</p>
+<p style="text-align:justify">(그림 b)에서</p>
+<p style="text-align:justify"><span class="math">y\,=\,-x+30</span> 의 우상쪽에 있는 점들은 <span class="math">y\,&gt;\,-x+30</span><sup><a id="fnref9" href="#fn9">[9]</a></sup> </p>
+<p style="text-align:justify"><span class="math">y\,&gt;\,-x+30</span> 이므로 ②에서 <span class="math">\dfrac{dx}{dt} &gt;0</span></p>
+<p style="text-align:justify">시간이 지남에 따라 x는 증가한다.</p>
+<p style="text-align:justify"><span class="math">y\,=\,-x+30</span> 의 좌하쪽에 있는 점들은 <span class="math">y\,&lt;\,-x+30</span><sup><a id="fnref10" href="#fn10">[10]</a></sup> </p>
+<p style="text-align:justify"><span class="math">y\,&lt;\,-x+30</span> 이므로 ②에서 <span class="math">\dfrac{dx}{dt} &lt;0</span></p>
+<p style="text-align:justify">시간이 지남에 따라 x는 감소한다.</p>
+<p style="text-align:justify">지금까지의 결과를 종합하면, 정상상태가 아닐 때 ①과 ②가 만들어 내는 방향지시자는 네 개의 구역 각각에서 서로 짝을 이루게 된다.</p>
+<p style="text-align:justify">두 그림을 결합하여 그리면 다음과 같다. 두 개의 직선이 이루는 부분을 4 구역으로 구분한 다음 앞에서 구한 화살표의 방향을 합치면 다음 그림과 같다.</p>
+<p style="text-align:center"><div class="img-placeholder object-image-placeholder">[객체이미지: media/phase-diagram_009.gif 연결 필요]</div>
+</p>
+<p style="text-align:justify">두 직선이 교차하는 점 (10, 20)이 정상상태(steady state)임을 알 수 있다. 그러나 이 점은 안정적이지 않다.</p>
+<p style="text-align:justify">아래 그림에서 고동색 화살표는 각 수직, 수평 화살표의 합인 벡터의 방향을 의미하며 (그림)에는 표시되지 않았지만 각 구간마다 수많은 고동색 벡터들이 존재한다. 노란색 화살표는 이러한 고동색 벡터들의 흐름을 나타낸다. 임의의 점에서 (10, 20)로 접근하려 하면 화살표의 방향에 따라 외부로 발산함을 알 수 있다. 따라서 (10, 20)은 안정상태(stable state)가 아님을 알 수 있다. 이러한 점을 鞍裝點(saddle point)이라 하고 안장점으로 이루어진 경로를 안장경로(saddle path)라 부른다. </p>
+<p style="text-align:justify">경제학에서 쓰는 위상도와 미분방정식에서 쓰는 상변화도와의 관계는 다음과 같다.</p>
+<p style="text-align:justify">미분방정식에서 배운 상변화도를 그려보자.</p>
+<p style="text-align:justify">앞의 미분방정식을 다시 쓰면</p>
+<p style="text-align:justify"><span class="math">\dfrac{dy}{dt} =x(t)-0.5y(t)\,</span>        </p>
+<p style="text-align:justify"><span class="math">\dfrac{dx}{dt} =0.5x(t)+0.5y(t)\,-\,15\,</span></p>
+<p style="text-align:justify">행렬 형태로 표현하면</p>
+<p style="text-align:left"><span class="math">\begin{pmatrix}\ddfrac{dx}{dt} \\[4pt] \ddfrac{dy}{dt}\end{pmatrix} = \begin{pmatrix}\ddfrac{1}{2} &amp; \ddfrac{1}{2} \\[4pt] 1 &amp; -\ddfrac{1}{2}\end{pmatrix}\begin{pmatrix}x(t) \\[4pt] y(t)\end{pmatrix} + \begin{pmatrix}-15 \\[4pt] 0\end{pmatrix}</span></p>
+<p style="text-align:left">고유치는</p>
+<p style="text-align:left"><span class="math">\phi(\lambda)= \lambda^{2} - \dfrac{3}{4} = 0</span></p>
+<p style="text-align:left">∴ <span class="math">\lambda = \pm \dfrac{\sqrt{3}}{2}</span></p>
+<p style="text-align:left">고유치의 부호가 바뀌므로 해는 안장경로를 따라 발산한다.</p>
+<p style="text-align:left">고유벡터는</p>
+<p style="text-align:left">(i) <span class="math">\lambda = \dfrac{\sqrt{3}}{2}</span></p>
+<p style="text-align:left"><span class="math">\begin{pmatrix}\ddfrac{1}{2} - \ddfrac{\sqrt{3}}{2} &amp; \ddfrac{1}{2} \\[4pt] 1 &amp; -\ddfrac{1}{2} - \ddfrac{\sqrt{3}}{2}\end{pmatrix}\begin{pmatrix}a \\[4pt] b\end{pmatrix} = \begin{pmatrix}0 \\[4pt] 0\end{pmatrix}</span></p>
+<p style="text-align:justify"><span class="math">p_{1} = a\begin{pmatrix}1 \\[4pt] \sqrt{3}-1\end{pmatrix} \approx a\begin{pmatrix}1 \\[4pt] 0.732\end{pmatrix}</span></p>
+<p style="text-align:justify">(ii) <span class="math">\lambda = - \dfrac{\sqrt{3}}{2}</span></p>
+<p style="text-align:left"><span class="math">\begin{pmatrix}\ddfrac{1}{2} + \ddfrac{\sqrt{3}}{2} &amp; \ddfrac{1}{2} \\[4pt] 1 &amp; -\ddfrac{1}{2} + \ddfrac{\sqrt{3}}{2}\end{pmatrix}\begin{pmatrix}a \\[4pt] b\end{pmatrix} = \begin{pmatrix}0 \\[4pt] 0\end{pmatrix}</span></p>
+<p style="text-align:justify"><span class="math">p_{2} = a\begin{pmatrix}1 \\[4pt] -(1+\sqrt{3})\end{pmatrix} \approx a\begin{pmatrix}1 \\[4pt] -2.732\end{pmatrix}</span></p>
+<p style="text-align:justify">두 고유벡터를 점근선으로 하는 <span class="math">x(t),\;y(t)</span>의 상변화도는 다음 그림과 같다.</p>
+<p style="text-align:justify">미분방정식의 해는</p>
+<p style="text-align:left"><img src="media/phase-diagram_010.png" style="max-width:100%;">
+</p>
+<p style="text-align:justify">예 3) 솔로우 경제성장모형(Solow&#x27;s model of economic growth)</p>
+<p style="text-align:justify">앞의 예보다 더 일반적인 생산함수를 사용해 솔로우 성장모형을 살펴보자. 생산함수 <span class="math">G(K,L)</span>는 증가함수이면서 엄격히 오목하고, 1차 동차함수라고 가정한다. 즉 규모에 대한 수익이 일정하며, 또한 모든 <span class="math">L</span>에 대해 <span class="math">G(0,L)=0</span> 이라 가정한다. 자본이 전혀 없으면 산출도 생산되지 않는다는 뜻이다.</p>
+<p style="text-align:justify">가장 익숙한 예로 Cobb-Douglas 생산함수</p>
+<p style="text-align:left"><span class="math">G(K,L)=AK^{1-a}L^{a}, \qquad A&gt;0,\; 0&lt;a&lt;1</span></p>
+<p style="text-align:justify">를 생각하자. 산출의 일정 비율 <span class="math">s</span> 가 저축되어 자본축적에 사용된다고 하면 자본의 운동방정식은</p>
+<p style="text-align:left"><span class="math">K'(t)=sA(K(t))^{1-a}(L(t))^{a}</span></p>
+<p style="text-align:justify">가 된다. 초기조건은 <span class="math">K(0)=K_{0}</span> 이고, 노동은 초기값 <span class="math">L_{0}&gt;0</span> 에서 출발하여 일정한 인구성장률 <span class="math">\lambda</span> 로 증가한다고 하자. 즉</p>
+<p style="text-align:left"><span class="math">\dfrac{L'(t)}{L(t)}=\lambda</span></p>
+<p style="text-align:justify">이다.</p>
+<p style="text-align:justify">이 모형을 직접 푸는 한 가지 방법은 먼저 <span class="math">L(t)</span> 를 구한 뒤, 그 결과를 <span class="math">K'(t)</span> 식에 대입하여 <span class="math">K(t)</span> 를 구하는 것이다.</p>
+<p style="text-align:justify"><span class="math">\ddfrac{L'(t)}{L(t)}=\lambda</span> 는 분리형 미분방정식이므로 적분하면</p>
+<p style="text-align:left"><span class="math">\ln L(t)=\lambda t + C</span></p>
+<p style="text-align:justify">를 얻고, 따라서</p>
+<p style="text-align:left"><span class="math">L(t)=Ce^{\lambda t}</span></p>
+<p style="text-align:justify">이다. 초기조건 <span class="math">L(0)=L_{0}</span> 로부터 <span class="math">C=L_{0}</span> 이므로</p>
+<p style="text-align:left"><span class="math">L(t)=L_{0}e^{\lambda t}</span></p>
+<p style="text-align:justify">가 된다.</p>
+<p style="text-align:justify">이를 자본축적식에 대입하면</p>
+<p style="text-align:left"><span class="math">K'(t)=sA(K(t))^{1-a}(L_{0}e^{\lambda t})^{a}=sA(L_{0})^{a}e^{a\lambda t}(K(t))^{1-a}</span></p>
+<p style="text-align:justify">를 얻는다. 이것도 분리형이므로</p>
+<p style="text-align:left"><span class="math">(K(t))^{a-1}K'(t)=sA(L_{0})^{a}e^{a\lambda t}</span></p>
+<p style="text-align:justify">로 쓸 수 있다. 양변을 적분하면</p>
+<p style="text-align:left"><span class="math">\dfrac{(K(t))^{a}}{a}=\dfrac{sA(L_{0})^{a}}{a\lambda}e^{a\lambda t}+C</span></p>
+<p style="text-align:justify">이므로</p>
+<p style="text-align:left"><span class="math">K(t)=\left(\dfrac{sA(L_{0})^{a}}{\lambda}e^{a\lambda t}+C_{1}\right)^{1/a}</span></p>
+<p style="text-align:justify">가 된다. 초기조건 <span class="math">K(0)=K_{0}</span> 을 이용하면</p>
+<p style="text-align:left"><span class="math">C_{1}=K_{0}^{a}-\dfrac{sA(L_{0})^{a}}{\lambda}</span></p>
+<p style="text-align:justify">이어서 최종적으로</p>
+<p style="text-align:left"><span class="math">K(t)=\left[\dfrac{sA(L_{0})^{a}}{\lambda}\left(e^{a\lambda t}-1\right)+K_{0}^{a}\right]^{1/a}</span></p>
+<p style="text-align:justify">를 얻는다.</p>
+<p style="text-align:justify">경제적으로 특히 중요한 변수는 자본-노동비율 <span class="math">\ddfrac{K(t)}{L(t)}</span> 이다. 위 결과를 이용하면</p>
+<p style="text-align:left"><span class="math">\dfrac{K(t)}{L(t)}=\dfrac{\left[\ddfrac{sA(L_{0})^{a}}{\lambda}\left(e^{a\lambda t}-1\right)+K_{0}^{a}\right]^{1/a}}{L_{0}e^{\lambda t}}</span></p>
+<p style="text-align:justify">이고, <span class="math">t \to \infty</span> 일 때 이 값은</p>
+<p style="text-align:left"><span class="math">\left(\dfrac{sA}{\lambda}\right)^{1/a}</span></p>
+<p style="text-align:justify">로 수렴한다.</p>
+<p style="text-align:justify">이제 일반적인 형태의 솔로우 모형으로 돌아가 보자. 자본축적식은</p>
+<p style="text-align:left"><span class="math">K'(t)=sG(K(t),L(t))</span></p>
+<p style="text-align:justify">이고, 노동은 여전히</p>
+<p style="text-align:left"><span class="math">\dfrac{L'(t)}{L(t)}=\lambda</span></p>
+<p style="text-align:justify">를 만족한다. 자본-노동비율 <span class="math">k=\ddfrac{K}{L}</span> 를 정의하고, 단변수 함수 <span class="math">f</span> 를</p>
+<p style="text-align:left"><span class="math">f(k)=G(k,1)</span></p>
+<p style="text-align:justify">로 두자. <span class="math">G</span> 가 증가함수이고 오목함수이므로 <span class="math">f'(k)&gt;0</span>, <span class="math">f''(k)&lt;0</span> 이다. 또한 <span class="math">G</span> 가 1차 동차함수이므로</p>
+<p style="text-align:left"><span class="math">G(K,L)=LG\!\left(\dfrac{K}{L},1\right)=Lf(k)</span></p>
+<p style="text-align:justify">가 성립한다. 따라서</p>
+<p style="text-align:left"><span class="math">K'(t)=sL(t)f(k(t))</span></p>
+<p style="text-align:justify">이다.</p>
+<p style="text-align:justify">이제 <span class="math">k(t)=\ddfrac{K(t)}{L(t)}</span> 를 미분하면</p>
+<p style="text-align:left"><span class="math">k'(t)=\dfrac{K'(t)L(t)-K(t)L'(t)}{(L(t))^{2}}</span></p>
+<p style="text-align:left"><span class="math">\qquad = \dfrac{sL(t)f(k(t))}{L(t)}-\dfrac{K(t)}{L(t)}\dfrac{L'(t)}{L(t)}</span></p>
+<p style="text-align:left"><span class="math">\qquad = sf(k(t))-\lambda k(t)</span></p>
+<p style="text-align:justify">를 얻는다. 즉 자본-노동비율의 동학은 단일 미분방정식</p>
+<p style="text-align:left"><span class="math">k'(t)=sf(k(t))-\lambda k(t)</span></p>
+<p style="text-align:justify">으로 요약된다.</p>
+<p style="text-align:justify"><span class="math">sf'(0)&gt;\lambda</span> 이고, 충분히 큰 <span class="math">k</span> 에 대해서는 <span class="math">sf'(k)&lt;\lambda</span> 라고 가정하자. 그러면 작은 <span class="math">k</span> 에서는 <span class="math">sf(k)</span> 가 <span class="math">\lambda k</span> 보다 위에 있고, 큰 <span class="math">k</span> 에서는 그 아래에 있게 된다. 따라서 위상도는 다음 그림과 같은 형태를 가진다.</p>
+<p style="text-align:justify"><img src="media/phase-diagram_011.png" style="max-width:100%;">
+</p>
+<p style="text-align:justify"><img src="media/phase-diagram_012.png" style="max-width:100%;">
+</p>
+<p style="text-align:justify">이 가정 아래에서 균형점은 두 개 존재한다. 하나는 <span class="math">k^{*}=0</span> 이고, 이는 불안정하다. 다른 하나는</p>
+<p style="text-align:left"><span class="math">sf(k^{*})=\lambda k^{*}</span></p>
+<p style="text-align:justify">를 만족하는 양의 자본-노동비율 <span class="math">k^{*}</span> 이며, 이는 국소적으로 안정적이다.</p>
+<p style="text-align:justify">안정적인 균형값 <span class="math">k^{*}</span> 는 저축률 <span class="math">s</span> 에 의존한다. 즉 위 식은 <span class="math">k^{*}</span> 를 <span class="math">s</span> 의 함수 <span class="math">k^{*}(s)</span> 로 암묵적으로 정의한다. 그렇다면 어떤 저축률이 1인당 소비의 정상상태 값을 최대화할까?</p>
+<p style="text-align:justify">1인당 소비는</p>
+<p style="text-align:left"><span class="math">\dfrac{(1-s)G(K,L)}{L}=(1-s)f(k)</span></p>
+<p style="text-align:justify">이므로, 정상상태에서의 1인당 소비는</p>
+<p style="text-align:left"><span class="math">(1-s)f(k^{*}(s))</span></p>
+<p style="text-align:justify">가 된다. 이 함수를 최대화하는 저축률을 <span class="math">s^{*}</span> 라고 하자. 일차조건은</p>
+<p style="text-align:left"><span class="math">-f(k^{*}(s^{*})) + (1-s^{*})f'(k^{*}(s^{*}))k^{*\prime}(s^{*})=0</span></p>
+<p style="text-align:justify">즉</p>
+<p style="text-align:left"><span class="math">(1-s^{*})f'(k^{*}(s^{*}))k^{*\prime}(s^{*})=f(k^{*}(s^{*}))</span></p>
+<p style="text-align:justify">이다.</p>
+<p style="text-align:justify">한편 균형조건 <span class="math">sf(k^{*}(s))=\lambda k^{*}(s)</span> 를 <span class="math">s</span> 에 대해 미분하면</p>
+<p style="text-align:left"><span class="math">f(k^{*}(s)) + sf'(k^{*}(s))k^{*\prime}(s)=\lambda k^{*\prime}(s)</span></p>
+<p style="text-align:justify">를 얻는다. 이를 <span class="math">s=s^{*}</span> 에서 이용하면 1인당 소비를 극대화하는 저축률의 조건은 결국</p>
+<p style="text-align:left"><span class="math">f'(k^{*}(s^{*}))=\lambda</span></p>
+<p style="text-align:justify">로 단순화된다.</p>
+<p style="text-align:justify">이 결과는 경제학에서 황금률(Golden Rule) 조건으로 알려져 있다. 생산함수 <span class="math">G</span> 가 1차 동차함수이면 <span class="math">f'(k)</span> 는 균형점에서의 자본의 한계생산과 일치한다. 따라서 최적 저축률에서의 정상상태 자본-노동비율은 자본의 한계생산이 인구성장률 <span class="math">\lambda</span> 와 같아지는 점에서 결정된다.</p>
+
+
+<h4 style="text-align:justify"><br>위상도 분석의 강점과 제약</h4>
+<p style="text-align:justify">위상도는 시간축이 없으므로 균형에 이르기까지 얼마나 시간이 걸리는지를 알 수 없다.</p>
+<p style="text-align:justify">위상도는 변수들의 동시 움직임을 나타내므로, 토빈의 q 이론에서 보듯이 자본량(capital stock)이 높을 때 자본의 가격은 낮다. 또는 그 역도 성립.(사소한 것이지만 기본 성장모형에서는 나타나지 않음)</p>
+<p style="text-align:justify">조정속도는 균형경로의 모양에 따라 다를 수 있음. 가파른 경로는 빠른 수렴을, 완만한 곡선은 느린 조정속도를 의미한다.</p>
+<hr>
+<section class="footnotes">
+<ol>
+<li id="fn1"><p style="text-align:justify"> 물리, 화학 등 다른 학문에서는 정상상태(steady-state)는 안정 상태를 의미하는 것으로 쓰인다. 경제학에서의 정상상태(steady-state)는 소득, 소비, 자본이 모두 일정한 속도로 성장하는 것을 의미한다. http://terms.naver.com/entry.nhn?docId=778739&amp;mobile&amp;categoryId=520 참조.</p>
+<a href="#fnref1">↩</a></li>
+<li id="fn2"><p style="text-align:justify"> 물론 시간의 감소의 경우는 화살표가 반대방향이 되겠지만 시간은 항상 증가하므로 시간의 감소는 고려하지 않는다.</p>
+<a href="#fnref2">↩</a></li>
+<li id="fn3"><p style="text-align:justify"> 일례로 (0, 0)을 대입해 보면 알 수 있음. </p>
+<a href="#fnref3">↩</a></li>
+<li id="fn4"><p style="text-align:justify"> 일례로 (0, 10)을 대입해 보면 알 수 있음. </p>
+<a href="#fnref4">↩</a></li>
+<li id="fn5"><p style="text-align:justify"> 그림은 matlab의 온라인 자바버전으로 그렸다. http://math.rice.edu/~dfield/dfpp.html </p>
+<a href="#fnref5">↩</a></li>
+<li id="fn6"><p style="text-align:justify"> http://personal.strath.ac.uk/r.perman/Phase.pdf </p>
+<a href="#fnref6">↩</a></li>
+<li id="fn7"><p style="text-align:justify"> 예를 들어 (0, 1) 은 <span class="math">y\,=\,2x</span>의 좌상쪽에 있는 점이다. x=0, y=1을 <span class="math">y\,=\,2x</span>에 대입하면 1 &gt; 0, 따라서 <span class="math">y\,&gt;\,2x</span></p>
+<a href="#fnref7">↩</a></li>
+<li id="fn8"><p style="text-align:justify"> 예를 들어 (1, 0) 은 <span class="math">y\,=\,2x</span>의 우하쪽에 있는 점이다. x=1, y=0을 <span class="math">y\,=\,2x</span>에 대입하면 0 &lt; 2, 따라서 <span class="math">y\,&lt;\,2x</span></p>
+<a href="#fnref8">↩</a></li>
+<li id="fn9"><p style="text-align:justify"> 예를 들어 (30, 30) 은 <span class="math">y\,=\,-x+30</span>의 우상쪽에 있는 점이다. x=30, y=30을 <span class="math">y\,=\,-x+30</span>에 대입하면 30 &gt; 0, 따라서 <span class="math">y\,&gt;\,-x+30</span></p>
+<a href="#fnref9">↩</a></li>
+<li id="fn10"><p style="text-align:justify"> 예를 들어 (0, 0) 은 <span class="math">y\,=\,-x+30</span>의 좌하쪽에 있는 점이다. x=0, y=0을 <span class="math">y\,=\,-x+30</span>에 대입하면 0 &lt; 30, 따라서 <span class="math">y\,&lt;\,-x+30</span></p>
+<a href="#fnref10">↩</a></li>
+</ol>
+</section>
+
+</body>
+</html>

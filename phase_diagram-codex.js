@@ -15,13 +15,6 @@
     return Math.abs(a - b) <= eps;
   }
 
-  function rewriteUnaryMinusExponent(expression) {
-    return expression.replace(
-      /(^|[+\-*/,(])-((?:\([^()]+\)|[A-Za-z_][A-Za-z0-9_]*|\d+(?:\.\d+)?))\*\*((?:\([^()]+\)|[A-Za-z_][A-Za-z0-9_]*|\d+(?:\.\d+)?))/g,
-      "$1-(($2)**$3)"
-    );
-  }
-
   function compileExpression(expression) {
     if (typeof expression === "function") {
       return expression;
@@ -29,13 +22,13 @@
     if (typeof expression !== "string") {
       throw new Error("Expression must be a string or function.");
     }
-    const normalized = rewriteUnaryMinusExponent(expression
+    const normalized = expression
       .replace(/\u2212/g, "-")
       .replace(/\s+/g, "")
       .replace(/(\d)([xy(])/g, "$1*$2")
       .replace(/([xy\)])(\d)/g, "$1*$2")
       .replace(/([xy\)])([xy(])/g, "$1*$2")
-      .replace(/\^/g, "**"));
+      .replace(/\^/g, "**");
     return new Function("x", "y", "params", `with (Math) { with (params || {}) { return ${normalized}; } }`);
   }
 
@@ -95,7 +88,7 @@
         params: options.params || {},
         system: options.system,
         style: {
-          axisColor: "#b8c0cc",
+          axisColor: "#111111",
           dxNullclineColor: "#4b5cff",
           dyNullclineColor: "#d64545",
           gridColor: "#d7dee8",
@@ -149,11 +142,25 @@
 
     compute1DRange(samples = 480) {
       const { xRange } = this.options;
-      const span = xRange[1] - xRange[0];
-      if (!Number.isFinite(span) || Math.abs(span) < 1e-9) {
+      let min = Infinity;
+      let max = -Infinity;
+
+      for (let i = 0; i <= samples; i += 1) {
+        const x = xRange[0] + ((xRange[1] - xRange[0]) * i) / samples;
+        const y = this.evaluate1D(x);
+        if (!Number.isFinite(y)) {
+          continue;
+        }
+        if (y < min) min = y;
+        if (y > max) max = y;
+      }
+
+      if (!Number.isFinite(min) || !Number.isFinite(max)) {
         return [-1, 1];
       }
-      const halfRange = Math.abs(span) / 2;
+
+      const maxAbs = Math.max(Math.abs(min), Math.abs(max), 1e-6);
+      const halfRange = maxAbs < 1e-9 ? 1 : maxAbs * 1.08 + 0.5;
       return [-halfRange, halfRange];
     }
 
@@ -186,34 +193,6 @@
       };
     }
 
-    newtonRefine(startX, startY, maxIter = 40) {
-      let x = startX;
-      let y = startY;
-      for (let iter = 0; iter < maxIter; iter += 1) {
-        const value = this.evaluate(x, y);
-        const jac = this.numericalJacobian(x, y);
-        const det = jac.a * jac.d - jac.b * jac.c;
-        if (!Number.isFinite(det) || Math.abs(det) < 1e-12) {
-          return null;
-        }
-        const deltaX = (jac.d * value.dx - jac.b * value.dy) / det;
-        const deltaY = (-jac.c * value.dx + jac.a * value.dy) / det;
-        x -= deltaX;
-        y -= deltaY;
-        if (!Number.isFinite(x) || !Number.isFinite(y)) {
-          return null;
-        }
-        if (Math.hypot(deltaX, deltaY) < 1e-10) {
-          break;
-        }
-      }
-      const residual = this.evaluate(x, y);
-      if (!this.inBounds(x, y) || Math.hypot(residual.dx, residual.dy) > 1e-8) {
-        return null;
-      }
-      return { x, y };
-    }
-
     findEquilibria() {
       const starts = [];
       const { xRange, yRange } = this.options;
@@ -228,12 +207,29 @@
 
       const roots = [];
       starts.forEach((start) => {
-        const refined = this.newtonRefine(start.x, start.y, 40);
-        if (refined) {
-          roots.push(refined);
+        let x = start.x;
+        let y = start.y;
+        for (let iter = 0; iter < 20; iter += 1) {
+          const value = this.evaluate(x, y);
+          const jac = this.numericalJacobian(x, y);
+          const det = jac.a * jac.d - jac.b * jac.c;
+          if (!Number.isFinite(det) || Math.abs(det) < 1e-10) {
+            break;
+          }
+          const deltaX = (jac.d * value.dx - jac.b * value.dy) / det;
+          const deltaY = (-jac.c * value.dx + jac.a * value.dy) / det;
+          x -= deltaX;
+          y -= deltaY;
+          if (Math.hypot(deltaX, deltaY) < 1e-8) {
+            break;
+          }
+        }
+        const residual = this.evaluate(x, y);
+        if (Math.hypot(residual.dx, residual.dy) < 1e-5 && this.inBounds(x, y)) {
+          roots.push({ x, y });
         }
       });
-      return dedupePoints(roots, 1e-2);
+      return dedupePoints(roots, 1e-3);
     }
 
     contourSegments(valueAt, nx = 160, ny = 160) {
@@ -662,19 +658,6 @@
       svg.appendChild(this.label(sx + dx, sy + dy, text, 17, color, anchor));
     }
 
-    hasAnnotatedPoint(point, tolerance = 1e-3) {
-      return (this.annotatedPoints || []).some((saved) =>
-        Math.hypot(saved.x - point.x, saved.y - point.y) <= tolerance
-      );
-    }
-
-    registerAnnotatedPoint(point) {
-      if (!this.annotatedPoints) {
-        this.annotatedPoints = [];
-      }
-      this.annotatedPoints.push({ x: point.x, y: point.y });
-    }
-
     choosePointLabelPlacement(point, text, candidates) {
       const sx = this.toScreenX(point.x);
       const sy = this.toScreenY(point.y);
@@ -718,42 +701,15 @@
       return best;
     }
 
-    axisIsNullcline(axis, fixedValue, valueAt, samples = 48, tolerance = 1e-7) {
-      if (axis === "x") {
-        const { xRange } = this.options;
-        for (let i = 0; i <= samples; i += 1) {
-          const x = xRange[0] + ((xRange[1] - xRange[0]) * i) / samples;
-          const value = valueAt(x, fixedValue);
-          if (!Number.isFinite(value) || Math.abs(value) > tolerance) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      const { yRange } = this.options;
-      for (let i = 0; i <= samples; i += 1) {
-        const y = yRange[0] + ((yRange[1] - yRange[0]) * i) / samples;
-        const value = valueAt(fixedValue, y);
-        if (!Number.isFinite(value) || Math.abs(value) > tolerance) {
-          return false;
-        }
-      }
-      return true;
-    }
-
     annotateIntercepts(svg, valueAt, color) {
-      const xIntercepts = this.axisIsNullcline("x", 0, valueAt) ? [] : this.findRootsAlongX(0, valueAt);
-      const yIntercepts = this.axisIsNullcline("y", 0, valueAt) ? [] : this.findRootsAlongY(0, valueAt);
+      const xIntercepts = this.findRootsAlongX(0, valueAt);
+      const yIntercepts = this.findRootsAlongY(0, valueAt);
 
       xIntercepts.forEach((xIntercept) => {
         if (!this.inBounds(xIntercept, 0) || nearlyEqual(xIntercept, 0, 1e-3)) {
           return;
         }
         const point = { x: xIntercept, y: 0 };
-        if (this.hasAnnotatedPoint(point)) {
-          return;
-        }
         const text = `(${this.formatNumber(xIntercept)}, 0)`;
         const placement = this.choosePointLabelPlacement(point, text, [
           { dx: 0, dy: -14, anchor: "middle" },
@@ -776,7 +732,6 @@
           placement.anchor
         );
         this.registerPlacedLabel(placement.rect);
-        this.registerAnnotatedPoint(point);
       });
 
       yIntercepts.forEach((yIntercept) => {
@@ -784,9 +739,6 @@
           return;
         }
         const point = { x: 0, y: yIntercept };
-        if (this.hasAnnotatedPoint(point)) {
-          return;
-        }
         const text = `(0, ${this.formatNumber(yIntercept)})`;
         const placement = this.choosePointLabelPlacement(point, text, [
           { dx: 12, dy: -10, anchor: "start" },
@@ -809,7 +761,6 @@
           placement.anchor
         );
         this.registerPlacedLabel(placement.rect);
-        this.registerAnnotatedPoint(point);
       });
     }
 
@@ -1308,20 +1259,41 @@
       const yStep = this.tickStep(yRange[0], yRange[1], 8);
       const xAxisY = this.clamp(this.toScreenY(0), plotBox.top, plotBox.bottom);
       const yAxisX = this.clamp(this.toScreenX(0), plotBox.left, plotBox.right);
-      const xLabelY = plotBox.bottom + 22;
-      const yLabelX = plotBox.left - 10;
-      const tickLabelColor = "#555555";
+      const xLabelY = xAxisY >= plotBox.bottom - 18 ? plotBox.bottom + 22 : xAxisY + 22;
+      const yLabelX = yAxisX <= plotBox.left + 18 ? plotBox.left - 10 : yAxisX - 10;
 
       const xStart = Math.ceil(xRange[0] / xStep) * xStep;
       for (let x = xStart; x <= xRange[1] + 1e-9; x += xStep) {
+        if (nearlyEqual(x, 0, 1e-9)) {
+          continue;
+        }
         const sx = this.toScreenX(x);
-        svg.appendChild(this.label(sx, xLabelY, this.formatNumber(x), 15, tickLabelColor, "middle"));
+        svg.appendChild(createNode("line", {
+          x1: sx,
+          y1: xAxisY - 5,
+          x2: sx,
+          y2: xAxisY + 5,
+          stroke: "#111111",
+          "stroke-width": 1.2
+        }));
+        svg.appendChild(this.label(sx, xLabelY, this.formatNumber(x), 15, "#111111", "middle"));
       }
 
       const yStart = Math.ceil(yRange[0] / yStep) * yStep;
       for (let y = yStart; y <= yRange[1] + 1e-9; y += yStep) {
+        if (nearlyEqual(y, 0, 1e-9)) {
+          continue;
+        }
         const sy = this.toScreenY(y);
-        svg.appendChild(this.label(yLabelX, sy + 5, this.formatNumber(y), 15, tickLabelColor, "end"));
+        svg.appendChild(createNode("line", {
+          x1: yAxisX - 5,
+          y1: sy,
+          x2: yAxisX + 5,
+          y2: sy,
+          stroke: "#111111",
+          "stroke-width": 1.2
+        }));
+        svg.appendChild(this.label(yLabelX, sy + 5, this.formatNumber(y), 15, "#111111", "end"));
       }
     }
 
@@ -1667,6 +1639,11 @@
     }
 
     drawLabels(svg) {
+      const dxValue = (x, y) => this.evaluate(x, y).dx;
+      const dyValue = (x, y) => this.evaluate(x, y).dy;
+
+      this.annotateIntercepts(svg, dxValue, "#111111");
+      this.annotateIntercepts(svg, dyValue, "#111111");
       this.drawEquilibrium(svg);
     }
 
@@ -1748,12 +1725,23 @@
           return;
         }
         const point = { x, y: 0 };
+        const text = `(${this.formatNumber(x)}, 0)`;
+        const placement = this.choosePointLabelPlacement(point, text, [
+          { dx: 0, dy: -14, anchor: "middle" },
+          { dx: 0, dy: 22, anchor: "middle" },
+          { dx: 12, dy: -14, anchor: "start" },
+          { dx: -12, dy: -14, anchor: "end" }
+        ]);
         svg.appendChild(createNode("circle", {
-          cx: this.toScreenX(point.x),
+          cx: this.toScreenX(x),
           cy: this.toScreenY(0),
-          r: 5.4,
-          fill: this.equilibriumColor(this.classifyEquilibrium(point))
+          r: 3.2,
+          fill: "#111111"
         }));
+        if (placement) {
+          this.addPointAnnotation(svg, point, text, "#111111", placement.dx, placement.dy, placement.anchor, 5.4);
+          this.registerPlacedLabel(placement.rect);
+        }
       });
     }
 
@@ -1763,7 +1751,6 @@
       this.dxNullclineSegments = [];
       this.dyNullclineSegments = [];
       this.placedLabelRects = [];
-      this.annotatedPoints = [];
       const svg = this.buildSvg();
       this.drawGrid(svg);
       this.drawFrame(svg);
@@ -1798,11 +1785,15 @@
         const entry = document.createElement("div");
         entry.style.display = "inline-flex";
         entry.style.alignItems = "center";
-        entry.style.gap = "0";
+        entry.style.gap = "3px";
 
         const prefix = document.createElement("span");
         prefix.textContent = "nullcline";
-        prefix.style.marginRight = "0";
+
+        const markerWrap = document.createElement("span");
+        markerWrap.style.display = "inline-flex";
+        markerWrap.style.alignItems = "center";
+        markerWrap.style.gap = "0";
 
         const swatch = document.createElement("span");
         swatch.style.display = "inline-block";
@@ -1811,20 +1802,21 @@
         swatch.style.background = item.color;
         swatch.style.border = "1px solid #111111";
         swatch.style.flexShrink = "0";
-        swatch.style.margin = "0 2px";
+        swatch.style.margin = "0";
         swatch.style.verticalAlign = "middle";
 
         const colon = document.createElement("span");
         colon.textContent = ":";
-        colon.style.marginLeft = "0";
-        colon.style.marginRight = "2px";
+        colon.style.marginLeft = "-2px";
+        colon.style.marginRight = "1px";
 
         const text = document.createElement("span");
         text.textContent = item.text;
 
         entry.appendChild(prefix);
-        entry.appendChild(swatch);
-        entry.appendChild(colon);
+        markerWrap.appendChild(swatch);
+        markerWrap.appendChild(colon);
+        entry.appendChild(markerWrap);
         entry.appendChild(text);
         legend.appendChild(entry);
       });
@@ -1846,10 +1838,9 @@
 
     formatNumber(value) {
       const rounded = Math.abs(value) < 1e-9 ? 0 : value;
-      const formatted = Number.isInteger(Math.round(rounded)) && Math.abs(rounded - Math.round(rounded)) < 1e-6
+      return Number.isInteger(Math.round(rounded)) && Math.abs(rounded - Math.round(rounded)) < 1e-6
         ? String(Math.round(rounded))
         : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-      return formatted === "-0" ? "0" : formatted;
     }
 
     drawComponentArrows(svg) {
@@ -1962,68 +1953,39 @@
         return;
       }
       this.equilibria.forEach((point) => {
-        const kind = this.classifyEquilibrium(point);
-        svg.appendChild(createNode("circle", {
-          cx: this.toScreenX(point.x),
-          cy: this.toScreenY(point.y),
-          r: 5.4,
-          fill: this.equilibriumColor(kind)
-        }));
+        const text = `(${this.formatNumber(point.x)}, ${this.formatNumber(point.y)})`;
+        const placement = this.equilibriumLabelPlacement(point, text);
+        if (!placement) {
+          return;
+        }
+        this.addPointAnnotation(
+          svg,
+          point,
+          text,
+          "#111111",
+          placement.dx,
+          placement.dy,
+          placement.anchor,
+          5.4
+        );
+        this.registerPlacedLabel(placement.rect);
       });
-    }
-
-    equilibriumColor(kind) {
-      if (kind === "stable") {
-        return "#22c55e";
-      }
-      if (kind === "unstable") {
-        return "#ef4444";
-      }
-      if (kind === "saddle") {
-        return "#f59e0b";
-      }
-      return "#64748b";
-    }
-
-    signWithTolerance(value, tolerance = 1e-8) {
-      if (!Number.isFinite(value) || Math.abs(value) <= tolerance) {
-        return 0;
-      }
-      return value > 0 ? 1 : -1;
     }
 
     classifyEquilibrium(point) {
       if (this.is1D) {
-        const { xRange } = this.options;
-        const span = Math.abs(xRange[1] - xRange[0]);
-        const baseDelta = Math.max(span * 0.01, 1e-4);
-        const deltas = [baseDelta, baseDelta * 2, baseDelta * 4];
-        let leftSign = 0;
-        let rightSign = 0;
-
-        for (const delta of deltas) {
-          const leftX = point.x - delta;
-          const rightX = point.x + delta;
-          leftSign = this.signWithTolerance(this.evaluate1D(leftX));
-          rightSign = this.signWithTolerance(this.evaluate1D(rightX));
-          if (leftSign !== 0 || rightSign !== 0) {
-            if (leftSign !== 0 && rightSign !== 0) {
-              break;
-            }
-          }
-        }
-
-        if (leftSign === 0 || rightSign === 0) {
+        const h = 1e-5;
+        const slope = (this.evaluate1D(point.x + h) - this.evaluate1D(point.x - h)) / (2 * h);
+        if (!Number.isFinite(slope)) {
           return "indeterminate";
         }
-
-        if (leftSign > 0 && rightSign < 0) {
+        if (slope < -1e-6) {
           return "stable";
         }
-        if (leftSign < 0 && rightSign > 0) {
+        if (slope > 1e-6) {
           return "unstable";
         }
-        return "saddle";
+        return "indeterminate";
       }
 
       const jac = this.numericalJacobian(point.x, point.y);
@@ -2033,7 +1995,7 @@
         return "indeterminate";
       }
       if (det < -1e-8) {
-        return "saddle";
+        return "unstable";
       }
       if (trace < -1e-8 && det > 1e-8) {
         return "stable";
@@ -2044,77 +2006,34 @@
       return "indeterminate";
     }
 
-    equilibriumDescription(kind) {
-      if (kind === "stable") {
-        return "안정균형(stable equilibrium)";
-      }
-      if (kind === "unstable") {
-        return "불안정균형(unstable equilibrium)";
-      }
-      if (kind === "saddle") {
-        return "안장점(saddle point)";
-      }
-      return "판별불가(indeterminate)";
-    }
-
     buildEquilibriumSummary() {
       const wrap = document.createElement("div");
-      wrap.style.marginTop = "12px";
-      wrap.style.fontFamily = "\"Noto Sans KR\", sans-serif";
+      wrap.style.marginTop = "10px";
+      wrap.style.fontFamily = "\"Times New Roman\", serif";
       wrap.style.fontSize = "15px";
-      wrap.style.color = "#223247";
+      wrap.style.color = "#111111";
       wrap.style.display = "inline-flex";
       wrap.style.flexDirection = "column";
       wrap.style.alignItems = "flex-start";
-      wrap.style.gap = "8px";
+      wrap.style.gap = "4px";
       wrap.style.textAlign = "left";
 
-      const title = document.createElement("div");
-      title.textContent = "균형 설명";
-      title.style.fontSize = "15px";
-      title.style.fontWeight = "700";
-      title.style.color = "#314256";
-      wrap.appendChild(title);
-
       const points = this.is1D
-        ? dedupePoints(
-            this.find1DRoots()
-              .filter((x) => Number.isFinite(x))
-              .map((x) => ({ x, y: 0 })),
-            5e-2
-          )
-        : dedupePoints(this.equilibria || [], 5e-2);
+        ? this.find1DRoots().filter((x) => Number.isFinite(x)).map((x) => ({ x, y: 0 }))
+        : (this.equilibria || []);
 
       if (!points.length) {
-        const empty = document.createElement("div");
-        empty.textContent = "균형점: 없음";
-        wrap.appendChild(empty);
+        wrap.textContent = "균형점: 없음";
         return wrap;
       }
 
-      points.forEach((point) => {
+      points.forEach((point, index) => {
         const kind = this.classifyEquilibrium(point);
+        const label = this.is1D
+          ? `E${index + 1} = (${this.formatNumber(point.x)}, 0)`
+          : `E${index + 1} = (${this.formatNumber(point.x)}, ${this.formatNumber(point.y)})`;
         const row = document.createElement("div");
-        row.style.display = "inline-flex";
-        row.style.alignItems = "center";
-        row.style.gap = "8px";
-
-        const swatch = document.createElement("span");
-        swatch.style.display = "inline-block";
-        swatch.style.width = "12px";
-        swatch.style.height = "12px";
-        swatch.style.background = this.equilibriumColor(kind);
-        swatch.style.border = "1px solid rgba(17, 24, 39, 0.18)";
-        swatch.style.borderRadius = "2px";
-        swatch.style.flexShrink = "0";
-
-        const label = document.createElement("span");
-        label.textContent = this.is1D
-          ? `(${this.formatNumber(point.x)}, 0): ${this.equilibriumDescription(kind)}`
-          : `(${this.formatNumber(point.x)}, ${this.formatNumber(point.y)}): ${this.equilibriumDescription(kind)}`;
-
-        row.appendChild(swatch);
-        row.appendChild(label);
+        row.textContent = `${label}:${kind}`;
         wrap.appendChild(row);
       });
       return wrap;
@@ -2132,7 +2051,6 @@
       this.dxNullclineSegments = [];
       this.dyNullclineSegments = [];
       this.placedLabelRects = [];
-      this.annotatedPoints = [];
       const svg = this.buildSvg();
       this.drawGrid(svg);
       this.drawFrame(svg);

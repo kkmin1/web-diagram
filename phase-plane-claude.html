@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Phase Plane — Economic Dynamics</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.3/math.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap');
+
+:root{
+  --bg:#0e1420; --surf:#141c28; --bdr:#2a3a50;
+  --txt:#d0e0f0; --mute:#5a7090; --acc:#00c8f0;
+  --nc1:#1a6ecc; --nc2:#cc4e10;
+  --stab:#009944; --unst:#cc4400; --sadd:#cc0033; --cent:#7722aa;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* ── PAGE: sidebar + canvas side-by-side, full-height ── */
+html,body{height:100%;overflow:hidden;}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:'DM Mono',monospace; font-size:14px;
+  display:flex; flex-direction:column;
+}
+header{
+  padding:11px 20px 9px; border-bottom:1px solid var(--bdr);
+  display:flex; align-items:baseline; gap:14px;
+  background:var(--surf); flex-shrink:0;
+}
+header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:#fff;}
+header .sub{font-size:0.78rem;color:var(--mute);}
+
+.layout{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:272px;min-width:272px;
+  background:var(--surf); border-right:1px solid var(--bdr);
+  display:flex;flex-direction:column;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain; /* ← sidebar scrolls independently */
+}
+.model-tabs{display:flex;flex-direction:column;gap:2px;padding:10px;border-bottom:1px solid var(--bdr);}
+.model-tab{
+  background:transparent;border:1px solid transparent;border-radius:5px;
+  padding:8px 11px;cursor:pointer;text-align:left;
+  color:var(--mute);font-family:'DM Mono',monospace;font-size:0.83rem;
+  transition:all .14s;line-height:1.4;
+}
+.model-tab:hover{background:#1a2535;color:var(--txt);}
+.model-tab.active{background:#112030;border-color:var(--acc);color:var(--acc);}
+.model-tab .tag{display:block;font-size:0.7rem;color:var(--mute);margin-top:1px;}
+.model-tab.active .tag{color:#4a88aa;}
+
+.params-sec{padding:12px 11px;border-bottom:1px solid var(--bdr);flex:1;}
+.params-sec h3{font-family:'Syne',sans-serif;font-size:0.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:10px;}
+.param-row{margin-bottom:13px;}
+.param-lbl{display:flex;justify-content:space-between;font-size:0.8rem;color:var(--txt);margin-bottom:4px;}
+.param-lbl .val{color:var(--acc);font-weight:500;}
+
+/* Range slider — touch-pan-x lets finger drag without triggering page scroll */
+input[type=range]{
+  width:100%;-webkit-appearance:none;appearance:none;
+  height:4px;background:var(--bdr);border-radius:2px;outline:none;
+  touch-action:pan-y;   /* ← horizontal drag captured by input, vertical scroll passes through */
+  cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;
+  background:var(--acc);border-radius:50%;cursor:pointer;box-shadow:0 0 5px var(--acc);
+}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;background:var(--acc);border-radius:50%;cursor:pointer;border:none;}
+
+.equations{
+  padding:9px 11px;background:#0a1018;border-radius:5px;
+  margin-bottom:11px;border:1px solid var(--bdr);
+}
+.eq-block{padding:2px 0;line-height:2;}
+.equations .katex{font-size:0.92rem !important;color:#aad0ee !important;}
+
+/* Legend — plain text only, NO unicode combining chars */
+.legend{padding:11px 11px 14px;border-top:1px solid var(--bdr);}
+.legend h3{font-family:'Syne',sans-serif;font-size:0.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:9px;}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--txt);margin-bottom:6px;}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.leg-line{width:20px;height:2.5px;flex-shrink:0;}
+.leg-sym{width:20px;text-align:center;flex-shrink:0;font-size:0.9rem;color:#99a;}
+
+/* ── CANVAS AREA ── */
+.canvas-area{
+  flex:1;display:flex;flex-direction:column;
+  background:#ede8de;overflow:hidden;min-width:0;
+}
+.toolbar{
+  display:flex;align-items:center;gap:10px;padding:6px 14px;
+  border-bottom:1px solid #c8c0b0;background:#e4ddd0;
+  flex-wrap:wrap;flex-shrink:0;
+}
+.tlbl{font-size:0.7rem;color:#887860;text-transform:uppercase;letter-spacing:.05em;}
+.btn{
+  background:#fff;border:1px solid #bbb;border-radius:4px;
+  padding:4px 13px;color:#445;font-family:'DM Mono',monospace;
+  font-size:0.76rem;cursor:pointer;transition:all .12s;touch-action:manipulation;
+}
+.btn:hover{border-color:#2090c0;color:#1070a0;}
+.btn.active{background:#ddf0ff;border-color:#2090c0;color:#1070a0;font-weight:600;}
+.tog{display:flex;gap:2px;}
+
+/* ── GRAPH WRAPPER: square, centred ──
+   The wrapper takes all remaining space.
+   Inside we place a square canvas sized to min(W, H)            */
+.gwrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:12px 18px;overflow:hidden;position:relative;min-height:0;
+  /* DO NOT set a fixed height — it inherits from flex parent    */
+}
+canvas{display:block;cursor:crosshair;box-shadow:0 2px 12px rgba(0,0,0,.14);}
+
+.ax-ov{position:absolute;pointer-events:none;white-space:nowrap;}
+.ax-ov .katex{font-size:0.88rem !important;color:#554433 !important;}
+
+.info-bar{padding:5px 14px;border-top:1px solid #c8c0b0;background:#e4ddd0;font-size:0.73rem;color:#887860;display:flex;gap:18px;flex-shrink:0;}
+.info-bar .coord{color:#334;}
+
+.eq-panel{
+  position:absolute;bottom:40px;right:12px;
+  background:rgba(255,252,246,.96);border:1px solid #bbb;border-radius:5px;
+  padding:9px 13px;font-size:0.76rem;min-width:190px;color:#334;
+  box-shadow:0 2px 9px rgba(0,0,0,.11);
+}
+.eq-panel h4{font-family:'Syne',sans-serif;font-size:0.66rem;text-transform:uppercase;letter-spacing:.09em;color:#998870;margin-bottom:6px;}
+.eq-entry{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.eq-badge{padding:1px 5px;border-radius:3px;font-size:0.63rem;font-weight:600;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PHASE PLANE</h1>
+  <span class="sub">경제 동학 시각화 · Economic Dynamics</span>
+</header>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+    <div class="model-tabs">
+      <button class="model-tab active" data-model="solow">Solow Growth<span class="tag">자본·인구 동학</span></button>
+      <button class="model-tab" data-model="predprey">Lotka–Volterra<span class="tag">포식자–피식자 경쟁</span></button>
+      <button class="model-tab" data-model="kaldor">Kaldor Business Cycle<span class="tag">투자·자본 비선형 순환</span></button>
+      <button class="model-tab" data-model="ramsey">Ramsey–Cass–Koopmans<span class="tag">소비·자본 최적 경로</span></button>
+      <button class="model-tab" data-model="is_lm">IS–LM Dynamics<span class="tag">생산·이자율 조정</span></button>
+      <button class="model-tab" data-model="custom">사용자 정의<span class="tag">임의 함수 입력</span></button>
+    </div>
+
+    <div class="params-sec">
+      <h3>Parameters</h3>
+      <div id="equations" class="equations"></div>
+      <div id="param-controls"></div>
+    </div>
+
+    <!-- Custom function input panel (shown only for custom model) -->
+    <div id="custom-panel" style="display:none;padding:12px 11px;border-bottom:1px solid var(--bdr);flex-shrink:0;">
+      <h3 style="font-family:'Syne',sans-serif;font-size:0.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:10px;">사용자 정의 시스템</h3>
+      <div style="font-size:0.75rem;color:var(--mute);margin-bottom:8px;">
+        JS 문법 &nbsp;·&nbsp; 곱셈 <code style="color:var(--acc)">*</code> 필수 &nbsp;·&nbsp; 거듭제곱 <code style="color:var(--acc)">**</code> &nbsp;·&nbsp; dy/dt 비우면 1차원
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <div style="font-size:0.78rem;color:var(--txt);margin-bottom:4px;">dx/dt =</div>
+        <input id="custom-dx" type="text" value="y" placeholder="예: x*(1-x)"
+          style="width:100%;background:#0a1018;border:1px solid var(--bdr);border-radius:4px;
+                 padding:7px 9px;color:var(--acc);font-family:'DM Mono',monospace;font-size:0.82rem;outline:none;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:0.78rem;color:var(--txt);margin-bottom:4px;">
+          dy/dt = <span style="font-size:0.68rem;color:var(--mute);">(비우면 1차원)</span>
+        </div>
+        <input id="custom-dy" type="text" value="-x + 0.5*y*(1 - x**2)" placeholder="비우면 1차원 phase line"
+          style="width:100%;background:#0a1018;border:1px solid var(--bdr);border-radius:4px;
+                 padding:7px 9px;color:var(--acc);font-family:'DM Mono',monospace;font-size:0.82rem;outline:none;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--mute);margin-bottom:3px;">x 범위</div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input id="custom-x0" type="number" value="-3" step="0.5"
+              style="width:54px;background:#0a1018;border:1px solid var(--bdr);border-radius:3px;
+                     padding:4px 6px;color:var(--txt);font-family:'DM Mono',monospace;font-size:0.75rem;outline:none;">
+            <span style="color:var(--mute);font-size:0.7rem;">~</span>
+            <input id="custom-x1" type="number" value="3" step="0.5"
+              style="width:54px;background:#0a1018;border:1px solid var(--bdr);border-radius:3px;
+                     padding:4px 6px;color:var(--txt);font-family:'DM Mono',monospace;font-size:0.75rem;outline:none;">
+          </div>
+        </div>
+        <div id="custom-yrange-row">
+          <div style="font-size:0.72rem;color:var(--mute);margin-bottom:3px;">y 범위</div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input id="custom-y0" type="number" value="-3" step="0.5"
+              style="width:54px;background:#0a1018;border:1px solid var(--bdr);border-radius:3px;
+                     padding:4px 6px;color:var(--txt);font-family:'DM Mono',monospace;font-size:0.75rem;outline:none;">
+            <span style="color:var(--mute);font-size:0.7rem;">~</span>
+            <input id="custom-y1" type="number" value="3" step="0.5"
+              style="width:54px;background:#0a1018;border:1px solid var(--bdr);border-radius:3px;
+                     padding:4px 6px;color:var(--txt);font-family:'DM Mono',monospace;font-size:0.75rem;outline:none;">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button id="custom-apply" class="btn" style="flex:1;background:#112030;border-color:var(--acc);color:var(--acc);">그리기 (Enter)</button>
+      </div>
+      <div id="custom-error" style="display:none;margin-top:7px;font-size:0.72rem;color:#e05050;background:#200a0a;border:1px solid #5a1010;border-radius:3px;padding:5px 8px;"></div>
+
+      <div style="margin-top:10px;padding:8px 10px;background:#070e16;border-radius:4px;border:1px solid var(--bdr);">
+        <div style="font-size:0.68rem;color:var(--mute);margin-bottom:5px;font-family:'Syne',sans-serif;letter-spacing:.05em;text-transform:uppercase;">예시 — 2차원</div>
+        <div class="custom-example" data-dx="y" data-dy="-x"
+          style="font-size:0.72rem;color:#6a9abb;cursor:pointer;padding:2px 0;border-bottom:1px solid #1a2535;">Simple Harmonic &nbsp;·&nbsp; ẋ=y &nbsp; ẏ=−x</div>
+        <div class="custom-example" data-dx="y" data-dy="-Math.sin(x)"
+          style="font-size:0.72rem;color:#6a9abb;cursor:pointer;padding:2px 0;border-bottom:1px solid #1a2535;">Pendulum &nbsp;·&nbsp; ẋ=y &nbsp; ẏ=−sin(x)</div>
+        <div class="custom-example" data-dx="x*(1-x-0.5*y)" data-dy="y*(0.75-0.5*x-y)"
+          style="font-size:0.72rem;color:#6a9abb;cursor:pointer;padding:2px 0;border-bottom:1px solid #1a2535;">Competitive LV &nbsp;·&nbsp; ẋ=x*(1−x−0.5*y)</div>
+        <div class="custom-example" data-dx="y - x*(x**2+y**2-1)" data-dy="-x - y*(x**2+y**2-1)"
+          style="font-size:0.72rem;color:#6a9abb;cursor:pointer;padding:2px 0;border-bottom:1px solid #1a2535;">Limit Cycle &nbsp;·&nbsp; ẋ=y−x*(x²+y²−1)</div>
+        <div style="font-size:0.68rem;color:var(--mute);margin:6px 0 4px;font-family:'Syne',sans-serif;letter-spacing:.05em;text-transform:uppercase;">예시 — 1차원 (dy/dt 비움)</div>
+        <div class="custom-example" data-dx="x*(1-x)" data-dy="" data-x0="0" data-x1="1.5"
+          style="font-size:0.72rem;color:#6a9abb;cursor:pointer;padding:2px 0;border-bottom:1px solid #1a2535;">Logistic &nbsp;·&nbsp; ẋ=x*(1−x)</div>
+        <div class="custom-example" data-dx="x - x**3" data-dy="" data-x0="-2" data-x1="2"
+          style="font-size:0.72rem;color:#6a9abb;cursor:pointer;padding:2px 0;border-bottom:1px solid #1a2535;">Pitchfork &nbsp;·&nbsp; ẋ=x−x**3</div>
+        <div class="custom-example" data-dx="0.3*x**0.33 - 0.1*x" data-dy="" data-x0="0.01" data-x1="8"
+          style="font-size:0.72rem;color:#6a9abb;cursor:pointer;padding:2px 0;">Solow-style &nbsp;·&nbsp; ẋ=0.3*x**0.33−0.1*x</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <h3>Legend</h3>
+      <!-- plain text labels only — no combining diacritics -->
+      <div class="leg-item"><div class="leg-line" style="background:var(--nc1)"></div><span>x-dot = 0 &nbsp;nullcline</span></div>
+      <div class="leg-item"><div class="leg-line" style="background:var(--nc2)"></div><span>y-dot = 0 &nbsp;nullcline</span></div>
+      <div class="leg-item"><div class="leg-line" style="background:#1a3888;height:1.5px"></div><span>궤적 (trajectory)</span></div>
+      <div class="leg-item"><div class="leg-sym">&#x2192;</div><span>nullcline 위 화살표</span></div>
+      <div class="leg-item"><div class="leg-sym">&#x2197;</div><span>4분면 대각 벡터</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--stab)"></div><span>안정 균형 (stable)</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--unst)"></div><span>불안정 균형 (unstable)</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--sadd)"></div><span>안장점 (saddle)</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cent)"></div><span>중심점 (center)</span></div>
+    </div>
+  </div>
+
+  <!-- ── Canvas area ── -->
+  <div class="canvas-area">
+    <div class="toolbar">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tlbl">표시</span>
+        <div class="tog">
+          <button class="btn active" id="btn-nc">영선</button>
+          <button class="btn active" id="btn-tr">궤적 보기</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn" id="btn-clear">궤적 지우기</button>
+        <button class="btn" id="btn-reset">재설정</button>
+      </div>
+      <span class="tlbl" style="margin-left:auto">캔버스 클릭 → 궤적 추가</span>
+    </div>
+
+    <div class="gwrap" id="gwrap">
+      <canvas id="canvas"></canvas>
+      <div class="ax-ov" id="xov"></div>
+      <div class="ax-ov" id="yov"></div>
+    </div>
+
+    <div class="eq-panel"><h4>균형점 분석</h4><div id="eq-list"></div></div>
+
+    <div class="info-bar">
+      <span>좌표: <span class="coord" id="coord">—</span></span>
+      <span>균형점: <span class="coord" id="eqcount">—</span></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// MODELS
+// ═══════════════════════════════════════════════════════
+const M = {
+
+  solow:{
+    xL:'k', yL:'\\dot{k}',
+    xR:[0.01,8], yR:[-1.3,2.2],
+    params:{
+      s:    {lb:'저축률  s',     mn:.05,mx:.6, st:.01, df:.3  },
+      delta:{lb:'감가상각  delta',mn:.01,mx:.2,st:.01, df:.08 },
+      n:    {lb:'인구증가율  n', mn:0,  mx:.1, st:.005,df:.02 },
+      alpha:{lb:'자본 몫  alpha',mn:.2, mx:.7, st:.05, df:.33 },
+    },
+    eqs:[String.raw`\dot{k}=sk^{\alpha}-(\delta+n)k`],
+    customDraw(C,T,p,xr,yr,showNC){
+      const N=500, dk=(xr[1]-xr[0])/N;
+      const sf=k=>p.s*Math.pow(Math.max(k,1e-6),p.alpha);
+      const dn=k=>(p.delta+p.n)*k;
+      const kd=k=>sf(k)-dn(k);
+      if(showNC){
+        strokeCurve(C,T,N,i=>({x:xr[0]+i*dk,y:sf(xr[0]+i*dk)}),'#1a6ecc',2.5);
+        strokeCurve(C,T,N,i=>({x:xr[0]+i*dk,y:dn(xr[0]+i*dk)}),'#cc4e10',2.5);
+      }
+      strokeCurve(C,T,N,i=>({x:xr[0]+i*dk,y:kd(xr[0]+i*dk)}),'#1a6644',2.8);
+      // KaTeX curve labels — stored for overlay rendering after draw()
+      const kL=xr[0]+(xr[1]-xr[0])*.58;
+      const kL2=xr[0]+(xr[1]-xr[0])*.80;
+      if(showNC){
+        _queueCurveLabel(T(kL,sf(kL)),   'sf(k)',           '#1a6ecc','above');
+        _queueCurveLabel(T(kL,dn(kL)),   '(\\delta+n)k',    '#cc4e10','below');
+      }
+      _queueCurveLabel(T(kL2,kd(kL2)),  '\\dot{k}',        '#1a6644', kd(kL2)>0?'above':'below');
+      // Arrows along k-dot curve
+      linsp(xr[0]*1.1,xr[1]*.93,11).forEach(k=>{
+        const y0=kd(k);
+        const sl=p.s*p.alpha*Math.pow(Math.max(k,1e-6),p.alpha-1)-(p.delta+p.n);
+        const sg=y0>=0?1:-1, mg=Math.sqrt(1+sl*sl);
+        arrowHead(C,T,k,y0,sg/mg,sg*sl/mg,'#1a6644',7);
+      });
+    },
+    dx:(x,_,p)=>p.s*Math.pow(Math.max(x,1e-6),p.alpha)-(p.delta+p.n)*x,
+    dy:(x,y,p)=>{const k=Math.max(x,1e-6),kd=p.s*Math.pow(k,p.alpha)-(p.delta+p.n)*k;return(p.s*p.alpha*Math.pow(k,p.alpha-1)-(p.delta+p.n))*kd;},
+    eqPts(p,xr){const ks=Math.pow(p.s/(p.delta+p.n),1/(1-p.alpha));return ks>xr[0]&&ks<xr[1]?[{x:ks,y:0,t:'stable',lb:'k*'}]:[];},
+  },
+
+  predprey:{
+    xL:'x', yL:'y',
+    xR:[0,4], yR:[0,4],
+    params:{
+      a:{lb:'피식자 증가율  a',mn:.1,mx:2,st:.05,df:1.0},
+      b:{lb:'포식 효율  b',   mn:.1,mx:2,st:.05,df:.5 },
+      c:{lb:'포식자 사망  c', mn:.1,mx:2,st:.05,df:.75},
+      d:{lb:'전환율  d',      mn:.1,mx:2,st:.05,df:.25},
+    },
+    eqs:[String.raw`\dot{x}=ax-bxy`,String.raw`\dot{y}=dxy-cy`],
+    // ẋ=0: x=0 (y-axis) AND y=a/b (horizontal line)
+    // ẏ=0: y=0 (x-axis) AND x=c/d (vertical line)
+    getNullclines(p){
+      return{
+        x0:[{type:'vline',val:0},{type:'hline',val:p.a/p.b}],   // ẋ=0
+        y0:[{type:'hline',val:0},{type:'vline',val:p.c/p.d}],   // ẏ=0
+      };
+    },
+    dx:(x,y,p)=>p.a*x-p.b*x*y,
+    dy:(x,y,p)=>p.d*x*y-p.c*y,
+    eqPts(p,xr,yr){
+      return [{x:0,y:0,t:'saddle',lb:'(0,0)'},{x:p.c/p.d,y:p.a/p.b,t:'center',lb:'(c/d,a/b)'}]
+        .filter(e=>e.x>=xr[0]&&e.x<=xr[1]&&e.y>=yr[0]&&e.y<=yr[1]);
+    },
+  },
+
+  kaldor:{
+    xL:'Y', yL:'K',
+    xR:[-2.8,2.8], yR:[-1.8,1.8],
+    params:{
+      alpha:{lb:'소득 조정속도  alpha',mn:.1,mx:3,  st:.1, df:1.0},
+      s:    {lb:'저축률  s',           mn:.1,mx:.9, st:.05,df:.3 },
+      delta:{lb:'감가상각  delta',      mn:.05,mx:.3,st:.01,df:.1 },
+    },
+    eqs:[String.raw`\dot{Y}=\alpha[I(Y,K)-S(Y)]`,String.raw`\dot{K}=I(Y,K)-\delta K`],
+    dx:(x,y,p)=>p.alpha*(Math.tanh(x)-0.5*y-p.s*x),
+    dy:(x,y,p)=>Math.tanh(x)-0.5*y-p.delta*y,
+    eqPts(){return [{x:0,y:0,t:'unstable',lb:'(0,0)'}];},
+  },
+
+  ramsey:{
+    xL:'k', yL:'c',
+    xR:[0.01,6], yR:[0,2.5],
+    params:{
+      rho:  {lb:'시간선호율  rho', mn:.01,mx:.1,st:.005,df:.04},
+      theta:{lb:'위험회피  theta', mn:.5, mx:3, st:.1,  df:1.0},
+      delta:{lb:'감가상각  delta', mn:.05,mx:.2,st:.01, df:.1 },
+      alpha:{lb:'자본 몫  alpha',  mn:.2, mx:.7,st:.05, df:.33},
+    },
+    eqs:[String.raw`\dot{k}=k^{\alpha}-c-\delta k`,String.raw`\dot{c}/c=(f'(k)-\delta-\rho)/\theta`],
+    dx:(x,y,p)=>Math.pow(Math.max(x,1e-6),p.alpha)-y-p.delta*x,
+    dy:(x,y,p)=>y*(p.alpha*Math.pow(Math.max(x,1e-6),p.alpha-1)-p.delta-p.rho)/p.theta,
+    eqPts(p,xr,yr){
+      const ks=Math.pow((p.rho+p.delta)/p.alpha,1/(p.alpha-1));
+      const cs=Math.pow(ks,p.alpha)-p.delta*ks;
+      return (ks>xr[0]&&ks<xr[1]&&cs>0&&cs<yr[1])?[{x:ks,y:cs,t:'saddle',lb:'k*,c*'}]:[];
+    },
+  },
+
+  is_lm:{
+    xL:'Y', yL:'r',
+    xR:[0,6], yR:[-0.5,3],
+    params:{
+      a:    {lb:'IS 기울기  a',  mn:.1,mx:2,st:.05,df:.5},
+      b:    {lb:'LM 기울기  b',  mn:.1,mx:2,st:.05,df:.3},
+      alpha:{lb:'Y 조정속도',    mn:.1,mx:2,st:.05,df:.8},
+      beta: {lb:'r 조정속도',    mn:.1,mx:2,st:.05,df:.6},
+    },
+    eqs:[String.raw`\dot{Y}=\alpha(Y_{IS}-Y)`,String.raw`\dot{r}=\beta(r_{LM}-r)`],
+    dx:(x,y,p)=>p.alpha*(3-p.a*y-x),
+    dy:(x,y,p)=>p.beta*(p.b*x-0.5-y),
+    // Nullcline label positions computed from model equations:
+    // IS (ẋ=0): r = (3-Y)/a  — draw label near Y=1
+    // LM (ẏ=0): r = bY-0.5  — draw label near Y=4
+    ncLabels(p,xr,yr){
+      return [
+        { latex:'IS', color:'#1a6ecc',
+          wx: xr[0]+(xr[1]-xr[0])*.18,
+          wy: (3-(xr[0]+(xr[1]-xr[0])*.18))/p.a,
+          side:'above' },
+        { latex:'LM', color:'#cc4e10',
+          wx: xr[0]+(xr[1]-xr[0])*.72,
+          wy: p.b*(xr[0]+(xr[1]-xr[0])*.72)-0.5,
+          side:'above' },
+      ];
+    },
+    eqPts(p){const Ye=(3+.5*p.a)/(1+p.a*p.b),re=p.b*Ye-.5;return [{x:Ye,y:re,t:'stable',lb:'Y*,r*'}];},
+  },
+
+  custom:{
+    xL:'x', yL:'y',
+    xR:[-3,3], yR:[-3,3],
+    params:{},
+    eqs:['\\dot{x}=f(x,y)', '\\dot{y}=g(x,y)'],
+    dx:(x,y)=>y,
+    dy:(x,y)=>-x,
+    eqPts(){return [];},
+    is1D: false,   // toggled by compileCustom
+  },
+};
+
+// ── 2D equilibrium finder (Newton-Raphson from grid seeds) ──
+function find2DEq(fx, fy, xr, yr){
+  const SEEDS=8; // grid divisions per axis → SEEDS² starting points
+  const h=1e-5;
+  const results=[];
+
+  for(let si=0;si<=SEEDS;si++) for(let sj=0;sj<=SEEDS;sj++){
+    let x = xr[0]+(xr[1]-xr[0])*si/SEEDS;
+    let y = yr[0]+(yr[1]-yr[0])*sj/SEEDS;
+
+    // Newton-Raphson iterations
+    let converged=false;
+    for(let iter=0;iter<60;iter++){
+      const f1=fx(x,y), f2=fy(x,y);
+      if(!isFinite(f1)||!isFinite(f2)) break;
+      if(Math.hypot(f1,f2)<1e-10){converged=true;break;}
+
+      // Numerical Jacobian
+      const J11=(fx(x+h,y)-fx(x-h,y))/(2*h);
+      const J12=(fx(x,y+h)-fx(x,y-h))/(2*h);
+      const J21=(fy(x+h,y)-fy(x-h,y))/(2*h);
+      const J22=(fy(x,y+h)-fy(x,y-h))/(2*h);
+      const det=J11*J22-J12*J21;
+      if(Math.abs(det)<1e-12) break;
+
+      const dx2=( J22*f1-J12*f2)/det;
+      const dy2=(-J21*f1+J11*f2)/det;
+      x-=dx2; y-=dy2;
+      if(Math.hypot(dx2,dy2)<1e-10){converged=true;break;}
+    }
+
+    if(!converged) continue;
+    const f1=fx(x,y), f2=fy(x,y);
+    if(!isFinite(f1)||!isFinite(f2)) continue;
+    if(Math.hypot(f1,f2)>1e-6) continue;
+    if(x<xr[0]||x>xr[1]||y<yr[0]||y>yr[1]) continue;
+
+    // Deduplicate
+    if(results.some(r=>Math.hypot(r.x-x,r.y-y)<1e-3)) continue;
+
+    // Classify via Jacobian eigenvalues
+    const J11=(fx(x+h,y)-fx(x-h,y))/(2*h);
+    const J12=(fx(x,y+h)-fx(x,y-h))/(2*h);
+    const J21=(fy(x+h,y)-fy(x-h,y))/(2*h);
+    const J22=(fy(x,y+h)-fy(x,y-h))/(2*h);
+    const tr=J11+J22, det2=J11*J22-J12*J21;
+    const disc=tr*tr-4*det2;
+    let t;
+    if(det2<0)              t='saddle';
+    else if(tr>1e-8)        t='unstable';
+    else if(tr<-1e-8)       t='stable';
+    else if(Math.abs(tr)<1e-8) t='center';
+    else                    t='stable';
+
+    results.push({x, y, t, lb:`(${x.toFixed(2)},${y.toFixed(2)})`});
+  }
+  return results;
+}
+
+// ── Custom function compiler — pure JS eval ───────────
+// 수식은 JS 문법 그대로: x*(1-x), Math.sin(x), x**2, etc.
+let _customDxFn=null, _customDyFn=null;
+
+function makeJsFn(expr){
+  // Wraps expression as JS function(x, y)
+  // Allows: Math.sin, Math.exp, Math.log, Math.sqrt, Math.abs, Math.pow, Math.PI
+  return new Function('x','y',
+    `"use strict";
+     const {sin,cos,tan,exp,log,sqrt,abs,pow,PI,sign,min,max,floor,ceil,round,sinh,cosh,tanh,asin,acos,atan,atan2,hypot,cbrt}=Math;
+     return (${expr});`
+  );
+}
+
+function compileCustom(){
+  const exDx = document.getElementById('custom-dx').value.trim();
+  const exDy = document.getElementById('custom-dy').value.trim();
+  const errEl = document.getElementById('custom-error');
+  const yRangeRow = document.getElementById('custom-yrange-row');
+  errEl.style.display='none';
+
+  const is1D = (exDy === '');
+
+  // Show/hide y-range input
+  yRangeRow.style.opacity = is1D ? '0.35' : '1';
+  yRangeRow.style.pointerEvents = is1D ? 'none' : '';
+
+  try {
+    const compiledDx = makeJsFn(exDx);
+    compiledDx(1, 1);   // syntax/runtime check
+
+    const x0 = parseFloat(document.getElementById('custom-x0').value) || -3;
+    const x1 = parseFloat(document.getElementById('custom-x1').value) ||  3;
+    const xr = [Math.min(x0,x1), Math.max(x0,x1)];
+
+    if(is1D){
+      // ── 1D phase line mode ──────────────────────────
+      _customDxFn = (x) => { try{ return compiledDx(x, 0); }catch{ return NaN; } };
+
+      // Auto y-range: cover the curve ẋ = f(x)
+      const samples = 120;
+      let ylo=Infinity, yhi=-Infinity;
+      for(let i=0;i<=samples;i++){
+        const xv = xr[0] + (xr[1]-xr[0])*i/samples;
+        const v = _customDxFn(xv);
+        if(isFinite(v)){ ylo=Math.min(ylo,v); yhi=Math.max(yhi,v); }
+      }
+      if(!isFinite(ylo)){ylo=-2;yhi=2;}
+      const pad = Math.max((yhi-ylo)*0.22, 0.3);
+      const yr = [ylo-pad, yhi+pad];
+
+      M.custom.xR = xr;
+      M.custom.yR = yr;
+      M.custom.xL = 'x';
+      M.custom.yL = '\\dot{x}';
+      M.custom.is1D = true;
+      M.custom.eqs = [`\\dot{x}=${exDx.replace(/\*/g,'\\cdot ')}`];
+
+      // customDraw for 1D: draw ẋ=f(x) curve + arrows on it
+      M.custom.customDraw = (C,T,p,xr,yr,showNC) => {
+        const N=500, dk=(xr[1]-xr[0])/N;
+        // ẋ curve
+        strokeCurve(C,T,N, i=>({x:xr[0]+i*dk, y:_customDxFn(xr[0]+i*dk)}), '#1a6644', 2.8);
+        // zero line label
+        _queueCurveLabel(T(xr[0]+(xr[1]-xr[0])*.85, 0), '\\dot{x}=0', '#888070', 'above');
+        // curve label
+        const lx = xr[0]+(xr[1]-xr[0])*.35;
+        _queueCurveLabel(T(lx, _customDxFn(lx)), '\\dot{x}=f(x)', '#1a6644', 'above');
+        // Direction arrows along curve
+        linsp(xr[0]*1.05+0.05, xr[1]*0.95, 13).forEach(xv => {
+          const yv = _customDxFn(xv); if(!isFinite(yv)) return;
+          const slope = (_customDxFn(xv+1e-4)-_customDxFn(xv-1e-4))/(2e-4);
+          const sg = yv>=0?1:-1, mg=Math.sqrt(1+slope*slope);
+          arrowHead(C,T,xv,yv,sg/mg,sg*slope/mg,'#1a6644',7);
+        });
+      };
+
+      // dx/dy still needed for trajectory integrator (trivial: dy=0 → x-axis flow only)
+      M.custom.dx = (x,_,p) => _customDxFn(x);
+      M.custom.dy = (x,y,p) => {
+        // tangent along curve: dy = f'(x)*f(x)
+        const kd = _customDxFn(x);
+        const dkdx = (_customDxFn(x+1e-4)-_customDxFn(x-1e-4))/(2e-4);
+        return dkdx*kd;
+      };
+
+      M.custom.eqPts = (p,xr) => {
+        const N=400, dx=(xr[1]-xr[0])/N, pts=[];
+        const tol=1e-6;
+        // Sample f at each subinterval; catch sign changes AND near-zero values
+        let prev = _customDxFn(xr[0]);
+        for(let i=1;i<=N;i++){
+          const xb = xr[0]+i*dx;
+          const fb = _customDxFn(xb);
+          if(!isFinite(prev)||!isFinite(fb)){prev=fb;continue;}
+
+          // Near-zero at a sample point itself
+          if(Math.abs(fb)<tol){
+            addEq1D(pts, xb);
+          }
+          // Sign change between prev and fb
+          else if(prev*fb<0){
+            // Bisection to find precise root
+            let lo=xb-dx, hi=xb, flo=prev, fhi=fb;
+            for(let k=0;k<40;k++){
+              const xm=(lo+hi)/2, fm=_customDxFn(xm);
+              if(!isFinite(fm)) break;
+              if(Math.abs(fm)<tol){lo=hi=xm;break;}
+              if(flo*fm<=0){hi=xm;fhi=fm;}else{lo=xm;flo=fm;}
+            }
+            addEq1D(pts, (lo+hi)/2);
+          }
+          prev=fb;
+        }
+        // Deduplicate
+        return pts.filter((p,i)=>pts.findIndex(q=>Math.abs(q.x-p.x)<1e-3)===i);
+      };
+
+      function addEq1D(pts, xeq){
+        const h=1e-4;
+        const slope=(_customDxFn(xeq+h)-_customDxFn(xeq-h))/(2*h);
+        const t = Math.abs(slope)<1e-8?'center': slope<0?'stable':'unstable';
+        pts.push({x:xeq, y:0, t, lb:`x=${xeq.toFixed(3)}`});
+      }
+
+    } else {
+      // ── 2D mode ─────────────────────────────────────
+      const compiledDy = makeJsFn(exDy);
+      compiledDy(1, 1);
+
+      _customDxFn = (x,y) => { try{ return compiledDx(x,y); }catch{ return NaN; } };
+      _customDyFn = (x,y) => { try{ return compiledDy(x,y); }catch{ return NaN; } };
+
+      const y0 = parseFloat(document.getElementById('custom-y0').value) || -3;
+      const y1 = parseFloat(document.getElementById('custom-y1').value) ||  3;
+
+      M.custom.xR = xr;
+      M.custom.yR = [Math.min(y0,y1), Math.max(y0,y1)];
+      M.custom.xL = 'x';
+      M.custom.yL = 'y';
+      M.custom.is1D = false;
+      M.custom.customDraw = null;  // use standard 2D draw path
+      M.custom.eqs = [
+        `\\dot{x}=${exDx.replace(/\*/g,'\\cdot ')}`,
+        `\\dot{y}=${exDy.replace(/\*/g,'\\cdot ')}`
+      ];
+      M.custom.dx = (x,y) => _customDxFn(x,y);
+      M.custom.dy = (x,y) => _customDyFn(x,y);
+      M.custom.eqPts = (p, xr, yr) => find2DEq(_customDxFn, _customDyFn, xr, yr);
+    }
+
+    trajs=[];
+    draw();
+    return true;
+  } catch(e){
+    errEl.textContent='수식 오류: '+e.message;
+    errEl.style.display='block';
+    return false;
+  }
+}
+
+// ── 2D equilibrium finder (Newton-Raphson + grid seeds) ──
+function find2DEq(dxFn, dyFn, xr, yr){
+  const h=1e-5;
+  const seeds=[];
+  // Dense grid of starting points
+  for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
+    seeds.push({
+      x: xr[0]+(xr[1]-xr[0])*i/6,
+      y: yr[0]+(yr[1]-yr[0])*j/6
+    });
+  }
+
+  const roots=[];
+  for(const s of seeds){
+    let x=s.x, y=s.y;
+    let converged=false;
+    for(let iter=0;iter<60;iter++){
+      const fx=dxFn(x,y), fy=dyFn(x,y);
+      if(!isFinite(fx)||!isFinite(fy)) break;
+      if(Math.hypot(fx,fy)<1e-10){converged=true;break;}
+      // Numerical Jacobian
+      const dfdx=(dxFn(x+h,y)-dxFn(x-h,y))/(2*h);
+      const dfdy=(dxFn(x,y+h)-dxFn(x,y-h))/(2*h);
+      const dgdx=(dyFn(x+h,y)-dyFn(x-h,y))/(2*h);
+      const dgdy=(dyFn(x,y+h)-dyFn(x,y-h))/(2*h);
+      const det=dfdx*dgdy-dfdy*dgdx;
+      if(!isFinite(det)||Math.abs(det)<1e-12) break;
+      const dx2=(dgdy*fx-dfdy*fy)/det;
+      const dy2=(dfdx*fy-dgdx*fx)/det;
+      x-=dx2; y-=dy2;
+      if(Math.hypot(dx2,dy2)<1e-10){converged=true;break;}
+    }
+    if(!converged) continue;
+    const fx=dxFn(x,y), fy=dyFn(x,y);
+    if(!isFinite(fx)||!isFinite(fy)) continue;
+    if(Math.hypot(fx,fy)>1e-6) continue;
+    if(x<xr[0]||x>xr[1]||y<yr[0]||y>yr[1]) continue;
+    // Deduplicate
+    if(roots.some(r=>Math.hypot(r.x-x,r.y-y)<1e-3)) continue;
+
+    // Classify via eigenvalues of Jacobian
+    const a=(dxFn(x+h,y)-dxFn(x-h,y))/(2*h);
+    const b=(dxFn(x,y+h)-dxFn(x,y-h))/(2*h);
+    const c=(dyFn(x+h,y)-dyFn(x-h,y))/(2*h);
+    const d=(dyFn(x,y+h)-dyFn(x,y-h))/(2*h);
+    const tr=a+d, det2=a*d-b*c;
+    const disc=tr*tr-4*det2;
+    let t;
+    if(det2<0) t='saddle';
+    else if(tr<0) t=disc>=0?'stable':'stable';   // node or spiral
+    else if(tr>0) t=disc>=0?'unstable':'unstable';
+    else t='center';
+
+    roots.push({x, y, t, lb:`(${x.toFixed(2)},${y.toFixed(2)})`});
+  }
+  return roots;
+}
+
+// ═══════════════════════════════════════════════════════
+// CANVAS + TRANSFORMS
+// ═══════════════════════════════════════════════════════
+let cur='solow', params={}, showNC=true, showTr=true, trajs=[];
+const cv=document.getElementById('canvas'), C=cv.getContext('2d');
+const PAD={l:56,r:20,t:20,b:46};
+
+function getR(){const m=M[cur];return{xr:m.xR,yr:m.yR};}
+function T(wx,wy){
+  const{xr,yr}=getR(),W=cv.width-PAD.l-PAD.r,H=cv.height-PAD.t-PAD.b;
+  return{x:PAD.l+(wx-xr[0])/(xr[1]-xr[0])*W, y:PAD.t+H-(wy-yr[0])/(yr[1]-yr[0])*H};
+}
+function Tw(cx,cy){
+  const{xr,yr}=getR(),W=cv.width-PAD.l-PAD.r,H=cv.height-PAD.t-PAD.b;
+  return{x:xr[0]+(cx-PAD.l)/W*(xr[1]-xr[0]), y:yr[0]+(1-(cy-PAD.t)/H)*(yr[1]-yr[0])};
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW HELPERS
+// ═══════════════════════════════════════════════════════
+function linsp(a,b,n){return Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1));}
+
+function strokeCurve(C,T,N,fn,col,lw){
+  C.save();C.strokeStyle=col;C.lineWidth=lw;C.setLineDash([]);C.beginPath();
+  let go=false;
+  for(let i=0;i<=N;i++){const{x,y}=fn(i),p=T(x,y);if(!isFinite(p.x)||!isFinite(p.y)){go=false;C.beginPath();continue;}go?(C.lineTo(p.x,p.y)):(C.moveTo(p.x,p.y),go=true);}
+  C.stroke();C.restore();
+}
+
+// ── KaTeX curve-label overlay queue ──────────────────
+// Solow customDraw queues labels during canvas draw;
+// placeLabels() flushes them as HTML overlays afterward.
+let _curveLabelQueue = [];
+
+function _queueCurveLabel(canvasPt, latex, color, side){
+  _curveLabelQueue.push({canvasPt, latex, color, side});
+}
+
+function _flushCurveLabels(oxCanvas, oyCanvas){
+  // Remove old curve-label overlays
+  document.querySelectorAll('.curve-label-ov').forEach(e=>e.remove());
+  const wrap = document.getElementById('gwrap');
+
+  _curveLabelQueue.forEach(({canvasPt, latex, color, side})=>{
+    const el = document.createElement('div');
+    el.className = 'ax-ov curve-label-ov';
+    el.style.pointerEvents = 'none';
+    el.style.whiteSpace = 'nowrap';
+    wrap.appendChild(el);
+
+    // Render KaTeX first (needed for width)
+    try {
+      if(typeof katex !== 'undefined')
+        katex.render(latex, el, {throwOnError:false, displayMode:false});
+      else el.textContent = latex;
+    } catch(e){ el.textContent = latex; }
+
+    // Color the katex output
+    el.style.color = color;
+    el.querySelectorAll('.katex,.katex *').forEach(n=>n.style.color=color);
+
+    // Position: canvas pixel → gwrap-relative
+    const lx = oxCanvas + canvasPt.x + 5;
+    const dy = side === 'above' ? -22 : 6;
+    const ly = oyCanvas + canvasPt.y + dy;
+    el.style.left = lx + 'px';
+    el.style.top  = ly + 'px';
+    el.style.position = 'absolute';
+  });
+
+  _curveLabelQueue = [];
+}
+
+function onCurveLabel(C,T,wx,wy,text,col,side){
+  const p=T(wx,wy);
+  C.save();C.font='bold 11px DM Mono,monospace';C.textAlign='left';
+  const dy=side==='above'?-13:13;
+  C.strokeStyle='rgba(253,250,244,.9)';C.lineWidth=4;C.lineJoin='round';
+  C.strokeText(text,p.x+3,p.y+dy);
+  C.fillStyle=col;C.fillText(text,p.x+3,p.y+dy);
+  C.restore();
+}
+
+// ── Grid-based vector field (for 2-D models) ───
+function drawGridVectors(m,p,xr,yr){
+  const NX=14, NY=14;
+  const dxw=(xr[1]-xr[0])/NX, dyw=(yr[1]-yr[0])/NY;
+
+  // Collect all vectors
+  const vals=[];
+  let maxMag=0;
+  for(let i=0;i<NX;i++) for(let j=0;j<NY;j++){
+    const wx=xr[0]+(i+.5)*dxw, wy=yr[0]+(j+.5)*dyw;
+    const vx=m.dx(wx,wy,p), vy=m.dy(wx,wy,p);
+    const mg=Math.hypot(vx,vy);
+    if(isFinite(mg)&&mg>0) maxMag=Math.max(maxMag,mg);
+    vals.push({wx,wy,vx,vy,mg});
+  }
+  if(maxMag===0) return;
+
+  // Fixed uniform length = 52% of cell size — all arrows same length so direction is clear
+  const cellPxW=(cv.width -PAD.l-PAD.r)/NX;
+  const cellPxH=(cv.height-PAD.t-PAD.b)/NY;
+  const arrowLen=Math.min(cellPxW,cellPxH)*.52;
+  const AH=arrowLen*.32;   // arrowhead size
+
+  vals.forEach(({wx,wy,vx,vy,mg})=>{
+    if(!isFinite(mg)||mg<1e-10) return;
+
+    // Normalise direction only — uniform length for clarity
+    const ux=vx/mg, uy=vy/mg;
+
+    // Centre the arrow on the grid point (tail at -half, head at +half)
+    const O=T(wx - ux*0.5*(dxw*.4), wy - uy*0.5*(dyw*.4));
+    const E={x: O.x + ux*arrowLen, y: O.y - uy*arrowLen}; // canvas y flipped
+
+    // Colour: use magnitude relative to max for slight opacity variation
+    const rel=Math.log1p(mg/maxMag*4)/Math.log1p(4); // 0..1, compressed
+    const alpha=0.38+0.28*rel;          // range 0.38–0.66: visible but not dominant
+    const col=`rgba(55,55,100,${alpha})`;
+
+    C.save();
+    C.strokeStyle=col; C.lineWidth=1.6; C.setLineDash([]);
+    C.beginPath(); C.moveTo(O.x,O.y); C.lineTo(E.x,E.y); C.stroke();
+
+    // Clear solid filled arrowhead
+    const ang=Math.atan2(E.y-O.y,E.x-O.x);
+    C.fillStyle=col;
+    C.beginPath();
+    C.moveTo(E.x, E.y);
+    C.lineTo(E.x - AH*Math.cos(ang-0.40), E.y - AH*Math.sin(ang-0.40));
+    C.lineTo(E.x - AH*Math.cos(ang+0.40), E.y - AH*Math.sin(ang+0.40));
+    C.closePath();
+    C.fill();
+    C.restore();
+  });
+}
+
+function arrowHead(C,T,wx,wy,tx,ty,col,sz){
+  const A=T(wx,wy),B=T(wx+tx*.18,wy+ty*.18);
+  const ang=Math.atan2(B.y-A.y,B.x-A.x);
+  C.save();C.fillStyle=col;C.beginPath();
+  C.moveTo(A.x+sz*Math.cos(ang),     A.y+sz*Math.sin(ang));
+  C.lineTo(A.x+sz*Math.cos(ang+2.4), A.y+sz*Math.sin(ang+2.4));
+  C.lineTo(A.x+sz*Math.cos(ang-2.4), A.y+sz*Math.sin(ang-2.4));
+  C.closePath();C.fill();C.restore();
+}
+
+function hline(C,T,y,xr,col,lw){const a=T(xr[0],y),b=T(xr[1],y);C.save();C.strokeStyle=col;C.lineWidth=lw;C.setLineDash([]);C.beginPath();C.moveTo(a.x,a.y);C.lineTo(b.x,b.y);C.stroke();C.restore();}
+function vline(C,T,x,yr,col,lw){const a=T(x,yr[0]),b=T(x,yr[1]);C.save();C.strokeStyle=col;C.lineWidth=lw;C.setLineDash([]);C.beginPath();C.moveTo(a.x,a.y);C.lineTo(b.x,b.y);C.stroke();C.restore();}
+
+// ── Marching-squares zero-set ──
+function zeroSet(fn,p,xr,yr,col,lw){
+  // For each x, find ALL y-roots of fn(x,y)=0 by dense vertical scan + bisection.
+  // Then draw each root-branch as a separate smooth polyline.
+  // This is reliable regardless of nullcline orientation or plot range.
+
+  const NX=400;   // x resolution
+  const NY=300;   // y scan resolution per column
+  const dxw=(xr[1]-xr[0])/NX;
+  const dyw=(yr[1]-yr[0])/NY;
+
+  // roots[i] = array of y-roots at x = xr[0] + i*dxw
+  const roots=[];
+  for(let i=0;i<=NX;i++){
+    const wx=xr[0]+i*dxw;
+    const col_roots=[];
+    let prev=fn(wx,yr[0],p);
+    for(let j=0;j<NY;j++){
+      const wy0=yr[0]+j*dyw, wy1=wy0+dyw;
+      const cur=fn(wx,wy1,p);
+      if(isFinite(prev)&&isFinite(cur)){
+        if(Math.abs(prev)<1e-10){ col_roots.push(wy0); }
+        else if(prev*cur<0){
+          // bisection
+          let lo=wy0,hi=wy1,flo=prev;
+          for(let k=0;k<28;k++){
+            const m=(lo+hi)/2, fm=fn(wx,m,p);
+            if(!isFinite(fm)) break;
+            if(flo*fm<=0){hi=m;}else{lo=m;flo=fm;}
+          }
+          col_roots.push((lo+hi)/2);
+        }
+      }
+      prev=cur;
+    }
+    roots.push(col_roots);
+  }
+
+  // Match roots across columns into branches (polylines).
+  // A root at column i+1 belongs to the same branch as root at column i
+  // if they are within maxJump world-units apart in y.
+  const maxJump=dyw*4;
+
+  // branches: each is an array of {x,y} world points
+  // active: currently open branches, keyed by their last y-value
+  C.save();
+  C.strokeStyle=col; C.lineWidth=lw; C.setLineDash([]);
+  C.lineJoin='round'; C.lineCap='round';
+
+  // Simple greedy branch tracker
+  let activeBranches=[]; // each: {pts:[{x,y}...], lastY}
+
+  for(let i=0;i<=NX;i++){
+    const wx=xr[0]+i*dxw;
+    const newRoots=[...roots[i]].sort((a,b)=>a-b);
+    const used=new Array(newRoots.length).fill(false);
+    const nextActive=[];
+
+    // Try to continue each active branch
+    for(const branch of activeBranches){
+      let bestIdx=-1, bestDist=maxJump;
+      for(let k=0;k<newRoots.length;k++){
+        if(used[k]) continue;
+        const d=Math.abs(newRoots[k]-branch.lastY);
+        if(d<bestDist){bestDist=d;bestIdx=k;}
+      }
+      if(bestIdx>=0){
+        used[bestIdx]=true;
+        branch.pts.push({x:wx,y:newRoots[bestIdx]});
+        branch.lastY=newRoots[bestIdx];
+        nextActive.push(branch);
+      } else {
+        // Branch ended — draw it
+        _drawBranch(branch.pts);
+      }
+    }
+
+    // Start new branches for unmatched roots
+    for(let k=0;k<newRoots.length;k++){
+      if(!used[k]){
+        nextActive.push({pts:[{x:wx,y:newRoots[k]}], lastY:newRoots[k]});
+      }
+    }
+    activeBranches=nextActive;
+  }
+
+  // Draw remaining open branches
+  for(const branch of activeBranches) _drawBranch(branch.pts);
+
+  C.restore();
+
+  function _drawBranch(pts){
+    if(pts.length<2) return;
+    C.beginPath();
+    let started=false;
+    for(const {x,y} of pts){
+      const cp=T(x,y);
+      if(!isFinite(cp.x)||!isFinite(cp.y)){started=false;continue;}
+      if(!started){C.moveTo(cp.x,cp.y);started=true;}
+      else C.lineTo(cp.x,cp.y);
+    }
+    C.stroke();
+  }
+}
+
+// ── Arrows on nullcline ──
+function ncArrows(zerFn,col,m,p,xr,yr,n){
+  // find sign-change cells, collect midpoints
+  const N=70,dxw=(xr[1]-xr[0])/N,dyw=(yr[1]-yr[0])/N,pts=[];
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){
+    const x0=xr[0]+i*dxw,y0=yr[0]+j*dyw;
+    if(zerFn(x0,y0,p)*zerFn(x0+dxw,y0,p)<0) pts.push({x:x0+dxw/2,y:y0+dyw/2});
+    if(zerFn(x0,y0,p)*zerFn(x0,y0+dyw,p)<0) pts.push({x:x0+dxw/2,y:y0+dyw/2});
+  }
+  const st=Math.max(1,Math.floor(pts.length/n));
+  pts.filter((_,i)=>i%st===0).forEach(({x,y})=>{
+    const vx=m.dx(x,y,p),vy=m.dy(x,y,p),mg=Math.hypot(vx,vy);
+    if(mg<1e-8)return;
+    arrowHead(C,T,x,y,vx/mg,vy/mg,col,7);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// REGION VECTORS  (教科書 style)
+//
+// Strategy:
+//  1. Rasterise the plane at NxN grid.
+//  2. For each cell compute sign-pair (sx, sy) = (sign dx, sign dy).
+//  3. Find connected sign-constant regions via flood-fill.
+//  4. For each region place EXACTLY ONE combined L+diagonal arrow
+//     at the region's centroid (clamped away from nullclines).
+// ═══════════════════════════════════════════════════════
+function drawRegionVectors(m,p,xr,yr){
+  const N=40; // grid resolution
+  const dxw=(xr[1]-xr[0])/N, dyw=(yr[1]-yr[0])/N;
+
+  // Build sign-pair grid: -1/0/+1 for dx and dy
+  // Use 0 only on nullcline (both signs present in cell neighbourhood) → boundary
+  const signX=[], signY=[];
+  for(let i=0;i<N;i++){
+    signX.push([]); signY.push([]);
+    for(let j=0;j<N;j++){
+      const cx=xr[0]+(i+.5)*dxw, cy=yr[0]+(j+.5)*dyw;
+      signX[i].push(Math.sign(m.dx(cx,cy,p)));
+      signY[i].push(Math.sign(m.dy(cx,cy,p)));
+    }
+  }
+
+  // Flood-fill to find connected regions of identical (sx,sy)
+  const visited=Array.from({length:N},()=>new Array(N).fill(false));
+  const col='rgba(44,44,72,0.72)';
+
+  for(let i0=0;i0<N;i0++){
+    for(let j0=0;j0<N;j0++){
+      if(visited[i0][j0]) continue;
+      const sx=signX[i0][j0], sy=signY[i0][j0];
+      if(sx===0||sy===0){visited[i0][j0]=true;continue;} // on nullcline
+
+      // BFS flood-fill
+      const cells=[];
+      const queue=[[i0,j0]];
+      visited[i0][j0]=true;
+      while(queue.length){
+        const[ci,cj]=queue.shift();
+        cells.push([ci,cj]);
+        for(const[di,dj]of[[-1,0],[1,0],[0,-1],[0,1]]){
+          const ni=ci+di,nj=cj+dj;
+          if(ni<0||ni>=N||nj<0||nj>=N) continue;
+          if(visited[ni][nj]) continue;
+          if(signX[ni][nj]===sx&&signY[ni][nj]===sy){
+            visited[ni][nj]=true; queue.push([ni,nj]);
+          }
+        }
+      }
+
+      // Centroid of region in world coords
+      let sumX=0,sumY=0;
+      for(const[ci,cj]of cells){
+        sumX+=xr[0]+(ci+.5)*dxw;
+        sumY+=yr[0]+(cj+.5)*dyw;
+      }
+      const cx=sumX/cells.length, cy=sumY/cells.length;
+
+      // Arm size proportional to region bounding box, capped
+      let minI=N,maxI=0,minJ=N,maxJ=0;
+      for(const[ci,cj]of cells){if(ci<minI)minI=ci;if(ci>maxI)maxI=ci;if(cj<minJ)minJ=cj;if(cj>maxJ)maxJ=cj;}
+      const regionW=(maxI-minI+1)*dxw, regionH=(maxJ-minJ+1)*dyw;
+      const armX=Math.min(regionW*.28,(xr[1]-xr[0])*.06);
+      const armY=Math.min(regionH*.28,(yr[1]-yr[0])*.06);
+
+      drawLDiagArrow(cx,cy,sx,sy,armX,armY,col);
+    }
+  }
+}
+
+// Draw L-shape + diagonal arrow at world point (wx,wy)
+// sx=±1 (x direction), sy=±1 (y direction)
+function drawLDiagArrow(wx,wy,sx,sy,armX,armY,col){
+  // Corner of the L: origin point
+  const O=T(wx,wy);
+  // Horizontal tip
+  const Hx=T(wx+sx*armX, wy);
+  // Vertical tip
+  const Vy=T(wx, wy+sy*armY);
+  // Diagonal tip (combines both)
+  const D=T(wx+sx*armX, wy+sy*armY);
+
+  const AH=6;
+  C.save();
+  C.strokeStyle=col; C.lineWidth=1.6; C.setLineDash([]);
+  C.fillStyle=col;
+
+  // ── Horizontal arm + arrowhead ──
+  C.beginPath(); C.moveTo(O.x,O.y); C.lineTo(Hx.x,Hx.y); C.stroke();
+  _arrowTip(Hx.x,Hx.y, Math.atan2(Hx.y-O.y,Hx.x-O.x), AH);
+
+  // ── Vertical arm + arrowhead ──
+  C.beginPath(); C.moveTo(O.x,O.y); C.lineTo(Vy.x,Vy.y); C.stroke();
+  _arrowTip(Vy.x,Vy.y, Math.atan2(Vy.y-O.y,Vy.x-O.x), AH);
+
+  // ── Diagonal arm + arrowhead (solid, same opacity) ──
+  C.strokeStyle=col;
+  C.setLineDash([]);
+  C.beginPath(); C.moveTo(O.x,O.y); C.lineTo(D.x,D.y); C.stroke();
+  C.setLineDash([]);
+  C.fillStyle=col;
+  _arrowTip(D.x,D.y, Math.atan2(D.y-O.y,D.x-O.x), AH-1);
+
+  C.restore();
+}
+
+function _arrowTip(px,py,ang,sz){
+  C.beginPath();
+  C.moveTo(px,py);
+  C.lineTo(px-sz*Math.cos(ang-.42),py-sz*Math.sin(ang-.42));
+  C.lineTo(px-sz*Math.cos(ang+.42),py-sz*Math.sin(ang+.42));
+  C.closePath(); C.fill();
+}
+
+// ═══════════════════════════════════════════════════════
+// NULLCLINES + ARROWS DISPATCH
+// ═══════════════════════════════════════════════════════
+function drawNullclines(m,p,xr,yr){
+  if(m.getNullclines){
+    const nc=m.getNullclines(p);
+    nc.x0.forEach(l=>{
+      if(l.type==='hline') hline(C,T,l.val,xr,'#1a6ecc',2.5);
+      else                 vline(C,T,l.val,yr,'#1a6ecc',2.5);
+    });
+    nc.y0.forEach(l=>{
+      if(l.type==='hline') hline(C,T,l.val,xr,'#cc4e10',2.5);
+      else                 vline(C,T,l.val,yr,'#cc4e10',2.5);
+    });
+    ncLineLabel(nc.x0[1].type==='hline'?{type:'hline',val:nc.x0[1].val}:nc.x0[1],'y=a/b','#1a6ecc',xr,yr);
+    ncLineLabel({type:'vline',val:nc.y0[1].val},'x=c/d','#cc4e10',xr,yr);
+    // no arrows on nullclines
+  } else {
+    zeroSet(m.dx,p,xr,yr,'#1a6ecc',2.5);
+    zeroSet(m.dy,p,xr,yr,'#cc4e10',2.5);
+    // Inline labels if model provides ncLabels()
+    if(m.ncLabels){
+      m.ncLabels(p,xr,yr).forEach(({latex,color,wx,wy,side})=>{
+        // clamp to plot area
+        if(wx>=xr[0]&&wx<=xr[1]&&wy>=yr[0]&&wy<=yr[1])
+          _queueCurveLabel(T(wx,wy), latex, color, side);
+      });
+    }
+    // no arrows on nullclines
+  }
+}
+
+function ncLineLabel(nc,text,col,xr,yr){
+  C.save();C.font='bold 11px DM Mono,monospace';C.fillStyle=col;
+  C.strokeStyle='rgba(253,250,244,.9)';C.lineWidth=4;C.lineJoin='round';
+  let p;
+  if(nc.type==='hline') p=T(xr[0]+(xr[1]-xr[0])*.82, nc.val);
+  else                  p=T(nc.val, yr[0]+(yr[1]-yr[0])*.82);
+  C.strokeText(text,p.x+5,p.y-7);C.fillText(text,p.x+5,p.y-7);
+  C.restore();
+}
+
+// Arrows on explicit line nullclines
+function ncArrowsExplicit(m,p,nc,xr,yr){
+  const col1='#1a6ecc', col2='#cc4e10';
+  // On y=a/b horizontal line: sample several x positions
+  const yH=nc.x0.find(l=>l.type==='hline');
+  if(yH) linsp(xr[0]+(xr[1]-xr[0])*.12,xr[1]-(xr[1]-xr[0])*.12,5).forEach(x=>{
+    const vx=m.dx(x,yH.val,p),vy=m.dy(x,yH.val,p),mg=Math.hypot(vx,vy);
+    if(mg>1e-8) arrowHead(C,T,x,yH.val,vx/mg,vy/mg,col1,7);
+  });
+  // On x=c/d vertical line
+  const xV=nc.y0.find(l=>l.type==='vline');
+  if(xV) linsp(yr[0]+(yr[1]-yr[0])*.12,yr[1]-(yr[1]-yr[0])*.12,5).forEach(y=>{
+    const vx=m.dx(xV.val,y,p),vy=m.dy(xV.val,y,p),mg=Math.hypot(vx,vy);
+    if(mg>1e-8) arrowHead(C,T,xV.val,y,vx/mg,vy/mg,col2,7);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// TRAJECTORIES (RK4)
+// ═══════════════════════════════════════════════════════
+function integrate(x0,y0){
+  const m=M[cur],p=params,{xr,yr}=getR();
+  const pts=[{x:x0,y:y0}]; let x=x0,y=y0,dt=.025;
+  for(let i=0;i<900;i++){
+    const k1x=m.dx(x,y,p),k1y=m.dy(x,y,p);
+    const k2x=m.dx(x+.5*dt*k1x,y+.5*dt*k1y,p),k2y=m.dy(x+.5*dt*k1x,y+.5*dt*k1y,p);
+    const k3x=m.dx(x+.5*dt*k2x,y+.5*dt*k2y,p),k3y=m.dy(x+.5*dt*k2x,y+.5*dt*k2y,p);
+    const k4x=m.dx(x+dt*k3x,y+dt*k3y,p),k4y=m.dy(x+dt*k3x,y+dt*k3y,p);
+    x+=dt*(k1x+2*k2x+2*k3x+k4x)/6;
+    y+=dt*(k1y+2*k2y+2*k3y+k4y)/6;
+    if(!isFinite(x)||!isFinite(y))break;
+    if(x<xr[0]-4||x>xr[1]+4||y<yr[0]-4||y>yr[1]+4)break;
+    pts.push({x,y});
+  }
+  return pts;
+}
+
+function drawTrajs(){
+  for(const tr of trajs){
+    if(tr.length<2)continue;
+    const n=tr.length; C.save(); C.lineWidth=2; C.lineJoin='round'; C.lineCap='round';
+    for(let i=1;i<n;i++){
+      C.strokeStyle=`rgba(20,55,140,${.12+.78*(i/n)})`;
+      const a=T(tr[i-1].x,tr[i-1].y),b=T(tr[i].x,tr[i].y);
+      C.beginPath();C.moveTo(a.x,a.y);C.lineTo(b.x,b.y);C.stroke();
+    }
+    const tail=T(tr[Math.max(0,n-7)].x,tr[Math.max(0,n-7)].y),head=T(tr[n-1].x,tr[n-1].y);
+    const ang=Math.atan2(head.y-tail.y,head.x-tail.x);
+    C.fillStyle='rgba(20,55,140,.9)'; C.beginPath(); C.moveTo(head.x,head.y);
+    C.lineTo(head.x-11*Math.cos(ang-.38),head.y-11*Math.sin(ang-.38));
+    C.lineTo(head.x-11*Math.cos(ang+.38),head.y-11*Math.sin(ang+.38));
+    C.closePath(); C.fill();
+    const st=T(tr[0].x,tr[0].y);
+    C.fillStyle='rgba(20,55,140,.4)'; C.beginPath(); C.arc(st.x,st.y,5,0,Math.PI*2); C.fill();
+    C.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EQUILIBRIA
+// ═══════════════════════════════════════════════════════
+const EQC={stable:'#009944',unstable:'#cc4400',saddle:'#cc0033',center:'#7722aa'};
+function drawEqs(m,p,xr,yr){
+  const eqs=m.eqPts(p,xr,yr)||[];
+  const el=document.getElementById('eq-list');
+  el.innerHTML=''; document.getElementById('eqcount').textContent=eqs.length+'개';
+  for(const e of eqs){
+    if(e.x<xr[0]||e.x>xr[1]||e.y<yr[0]||e.y>yr[1])continue;
+    const cp=T(e.x,e.y),col=EQC[e.t]||'#333';
+    C.strokeStyle=col; C.lineWidth=2.2; C.beginPath(); C.arc(cp.x,cp.y,9,0,Math.PI*2); C.stroke();
+    C.fillStyle=col; C.beginPath(); C.arc(cp.x,cp.y,4.5,0,Math.PI*2); C.fill();
+    C.fillStyle=col; C.font='bold 12px DM Mono,monospace'; C.textAlign='left';
+    C.fillText(e.lb,cp.x+13,cp.y-4);
+    C.fillStyle='#887060'; C.font='11px DM Mono,monospace';
+    C.fillText(`(${e.x.toFixed(2)},${e.y.toFixed(2)})`,cp.x+13,cp.y+10);
+    const d=document.createElement('div'); d.className='eq-entry';
+    d.innerHTML=`<span class="eq-badge" style="background:${col}22;color:${col};border:1px solid ${col}55">${e.t}</span><span>${e.lb}: (${e.x.toFixed(2)},${e.y.toFixed(2)})</span>`;
+    el.appendChild(d);
+  }
+  if(!eqs.length) el.innerHTML='<div style="color:#aaa">균형점 없음</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// AXIS KaTeX OVERLAYS
+// ═══════════════════════════════════════════════════════
+function placeLabels(xr,yr){
+  const wrap=document.getElementById('gwrap');
+  const wr=wrap.getBoundingClientRect(),cr=cv.getBoundingClientRect();
+  const ox=cr.left-wr.left,oy=cr.top-wr.top;
+  const m=M[cur];
+  const xm=T((xr[0]+xr[1])/2,yr[0]);
+  const xov=document.getElementById('xov');
+  xov.style.left=(ox+xm.x)+'px'; xov.style.top=(oy+xm.y+28)+'px'; xov.style.transform='translateX(-50%)';
+  rk(xov,m.xL);
+  const ym=T(xr[0],(yr[0]+yr[1])/2);
+  const yov=document.getElementById('yov');
+  yov.style.left=(ox+ym.x-50)+'px'; yov.style.top=(oy+ym.y)+'px'; yov.style.transform='translateY(-50%) rotate(-90deg)';
+  rk(yov,m.yL);
+  // Flush any queued curve-label KaTeX overlays (Solow)
+  _flushCurveLabels(ox, oy);
+}
+function rk(el,lt){try{if(typeof katex!=='undefined')katex.render(lt,el,{throwOnError:false});else el.textContent=lt;}catch(e){el.textContent=lt;}}
+
+// ═══════════════════════════════════════════════════════
+// MAIN DRAW
+// ═══════════════════════════════════════════════════════
+function draw(){
+  _curveLabelQueue = []; // reset before each draw
+  C.clearRect(0,0,cv.width,cv.height);
+  const{xr,yr}=getR();
+  drawBg(); drawGrid(xr,yr); drawAxes(xr,yr);
+  const m=M[cur],p=params;
+  if(m.customDraw){
+    m.customDraw(C,T,p,xr,yr,showNC);
+    // 1-D solow: no 2D vector field
+  } else {
+    drawGridVectors(m,p,xr,yr);           // faint background vectors first
+    if(showNC) drawNullclines(m,p,xr,yr); // nullclines on top
+    drawRegionVectors(m,p,xr,yr);         // L+diagonal per region on top
+  }
+  if(showTr) drawTrajs();
+  drawEqs(m,p,xr,yr);
+  placeLabels(xr,yr);
+}
+
+function drawBg(){
+  C.fillStyle='#f8f4ec';C.fillRect(0,0,cv.width,cv.height);
+  C.fillStyle='#fdfaf4';C.fillRect(PAD.l,PAD.t,cv.width-PAD.l-PAD.r,cv.height-PAD.t-PAD.b);
+}
+
+function drawGrid(xr,yr){
+  C.strokeStyle='#ddd8cc';C.lineWidth=1;C.setLineDash([]);
+  const xs=nice(xr[1]-xr[0]),ys=nice(yr[1]-yr[0]);
+  for(let x=Math.ceil(xr[0]/xs)*xs;x<=xr[1]+1e-9;x+=xs){const a=T(x,yr[0]),b=T(x,yr[1]);C.beginPath();C.moveTo(a.x,a.y);C.lineTo(b.x,b.y);C.stroke();}
+  for(let y=Math.ceil(yr[0]/ys)*ys;y<=yr[1]+1e-9;y+=ys){const a=T(xr[0],y),b=T(xr[1],y);C.beginPath();C.moveTo(a.x,a.y);C.lineTo(b.x,b.y);C.stroke();}
+}
+
+function drawAxes(xr,yr){
+  C.setLineDash([]);C.strokeStyle='#998870';C.lineWidth=1.5;
+  const tl=T(xr[0],yr[1]),br=T(xr[1],yr[0]);C.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+  C.strokeStyle='#bbb0a0';C.lineWidth=1;C.setLineDash([4,4]);
+  if(yr[0]<0&&yr[1]>0){const a=T(xr[0],0),b=T(xr[1],0);C.beginPath();C.moveTo(a.x,a.y);C.lineTo(b.x,b.y);C.stroke();}
+  if(xr[0]<0&&xr[1]>0){const a=T(0,yr[0]),b=T(0,yr[1]);C.beginPath();C.moveTo(a.x,a.y);C.lineTo(b.x,b.y);C.stroke();}
+  C.setLineDash([]);
+  C.fillStyle='#665540';C.font='12px DM Mono,monospace';
+  const xs=nice(xr[1]-xr[0]),ys=nice(yr[1]-yr[0]);
+  C.textAlign='center';
+  for(let x=Math.ceil(xr[0]/xs)*xs;x<=xr[1]+1e-9;x+=xs){
+    const pp=T(x,yr[0]);C.strokeStyle='#998870';C.lineWidth=1.5;
+    C.beginPath();C.moveTo(pp.x,pp.y);C.lineTo(pp.x,pp.y+5);C.stroke();C.fillText(fmt(x),pp.x,pp.y+18);
+  }
+  C.textAlign='right';
+  for(let y=Math.ceil(yr[0]/ys)*ys;y<=yr[1]+1e-9;y+=ys){
+    const pp=T(xr[0],y);C.strokeStyle='#998870';C.lineWidth=1.5;
+    C.beginPath();C.moveTo(pp.x,pp.y);C.lineTo(pp.x-5,pp.y);C.stroke();C.fillText(fmt(y),pp.x-8,pp.y+4);
+  }
+}
+
+function fmt(v){if(Math.abs(v)<1e-9)return'0';return parseFloat(v.toPrecision(2)).toString();}
+function nice(r){const raw=r/5,e=Math.floor(Math.log10(raw)),f=raw/Math.pow(10,e);return(f<1.5?1:f<3.5?2:f<7.5?5:10)*Math.pow(10,e);}
+
+// ═══════════════════════════════════════════════════════
+// UI / MODEL LOADING
+// ═══════════════════════════════════════════════════════
+function loadModel(name){
+  cur=name; trajs=[];
+  const m=M[name]; params={};
+  for(const[k,v]of Object.entries(m.params)) params[k]=v.df;
+
+  // Show/hide panels
+  const isCustom = name==='custom';
+  document.getElementById('custom-panel').style.display = isCustom ? 'block' : 'none';
+  document.querySelector('.params-sec').style.display   = isCustom ? 'none'  : 'block';
+
+  const ed=document.getElementById('equations'); ed.innerHTML='';
+  function rEqs(){
+    ed.innerHTML='';
+    for(const lt of m.eqs){
+      const d=document.createElement('div');d.className='eq-block';
+      try{katex.render(lt,d,{throwOnError:false});}catch(e){d.textContent=lt;}
+      ed.appendChild(d);
+    }
+  }
+  if(typeof katex!=='undefined') rEqs();
+  else{const t=setInterval(()=>{if(typeof katex!=='undefined'){clearInterval(t);rEqs();}},80);}
+
+  const ctrl=document.getElementById('param-controls'); ctrl.innerHTML='';
+  for(const[k,v]of Object.entries(m.params)){
+    const div=document.createElement('div'); div.className='param-row';
+    div.innerHTML=`<div class="param-lbl"><span>${v.lb}</span><span class="val" id="v${k}">${v.df.toFixed(3)}</span></div>
+      <input type="range" id="r${k}" min="${v.mn}" max="${v.mx}" step="${v.st}" value="${v.df}">`;
+    ctrl.appendChild(div);
+    div.querySelector('input').addEventListener('input',e=>{
+      params[k]=parseFloat(e.target.value);
+      document.getElementById('v'+k).textContent=params[k].toFixed(3);
+      trajs=[];draw();
+    });
+  }
+  document.querySelectorAll('.model-tab').forEach(t=>t.classList.toggle('active',t.dataset.model===name));
+
+  if(isCustom){
+    // Auto-compile on load so the placeholder functions are live
+    compileCustom();
+  } else {
+    draw();
+  }
+}
+
+// ── Custom panel event wiring ──────────────────────────
+document.getElementById('custom-apply').addEventListener('click', compileCustom);
+
+// Enter key in either input field
+['custom-dx','custom-dy','custom-x0','custom-x1','custom-y0','custom-y1'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); compileCustom(); }
+  });
+});
+
+// Example presets
+document.querySelectorAll('.custom-example').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.getElementById('custom-dx').value = el.dataset.dx || '';
+    document.getElementById('custom-dy').value = el.dataset.dy || '';
+    if(el.dataset.x0) document.getElementById('custom-x0').value = el.dataset.x0;
+    if(el.dataset.x1) document.getElementById('custom-x1').value = el.dataset.x1;
+    compileCustom();
+  });
+});
+
+document.getElementById('btn-nc').addEventListener('click',function(){
+  showNC=!showNC;
+  this.classList.toggle('active',showNC);
+  draw();
+});
+
+document.getElementById('btn-tr').addEventListener('click',function(){
+  showTr=!showTr;
+  this.classList.toggle('active',showTr);
+  draw();
+});
+
+document.getElementById('btn-clear').addEventListener('click',()=>{
+  trajs=[];
+  draw();
+});
+
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  trajs=[];
+  loadModel(cur);
+});
+
+document.querySelectorAll('.model-tab').forEach(b=>b.addEventListener('click',()=>loadModel(b.dataset.model)));
+
+// Canvas click (mouse) — adds trajectory
+cv.addEventListener('click',e=>{
+  const r=cv.getBoundingClientRect();
+  const w=Tw((e.clientX-r.left)*(cv.width/r.width),(e.clientY-r.top)*(cv.height/r.height));
+  const{xr,yr}=getR();
+  if(w.x<xr[0]||w.x>xr[1]||w.y<yr[0]||w.y>yr[1]) return;
+  trajs.push(integrate(w.x,w.y));
+  if(!showTr){ showTr=true; document.getElementById('btn-tr').classList.add('active'); }
+  draw();
+});
+
+// Canvas tap (touch — only short taps, not pans)
+let touchStart=null;
+cv.addEventListener('touchstart',e=>{const t=e.touches[0];touchStart={x:t.clientX,y:t.clientY,time:Date.now()};},{passive:true});
+cv.addEventListener('touchend',e=>{
+  if(!touchStart)return;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-touchStart.x, dy=t.clientY-touchStart.y;
+  const dt=Date.now()-touchStart.time;
+  if(Math.hypot(dx,dy)<12&&dt<300){
+    const r=cv.getBoundingClientRect();
+    const w=Tw((t.clientX-r.left)*(cv.width/r.width),(t.clientY-r.top)*(cv.height/r.height));
+    const{xr,yr}=getR();
+    if(w.x>=xr[0]&&w.x<=xr[1]&&w.y>=yr[0]&&w.y<=yr[1]){
+      trajs.push(integrate(w.x,w.y));
+      if(!showTr){ showTr=true; document.getElementById('btn-tr').classList.add('active'); }
+      draw();
+    }
+  }
+  touchStart=null;
+},{passive:true});
+
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();
+  const w=Tw((e.clientX-r.left)*(cv.width/r.width),(e.clientY-r.top)*(cv.height/r.height));
+  const m=M[cur],vx=m.dx(w.x,w.y,params),vy=m.dy(w.x,w.y,params);
+  document.getElementById('coord').textContent=`(${w.x.toFixed(3)}, ${w.y.toFixed(3)})  x-dot=${vx.toFixed(3)}, y-dot=${vy.toFixed(3)}`;
+});
+
+// ── Resize: square canvas ──────────────────────────────
+function resize(){
+  const wrap=document.getElementById('gwrap');
+  const W=wrap.clientWidth, H=wrap.clientHeight;
+  // target square: 70% of W but never taller than 90% of H
+  const side=Math.min(Math.floor(W*.72), Math.floor(H*.92), Math.floor(W));
+  cv.width =Math.max(side,240);
+  cv.height=Math.max(side,240);   // ← same as width → square
+  draw();
+}
+window.addEventListener('resize',resize);
+window.addEventListener('load',()=>setTimeout(resize,150));
+setTimeout(resize,80);
+</script>
+</body>
+</html>

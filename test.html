@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyScript 테스트</title>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2026.3.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2026.3.1/core.js"></script>
+</head>
+<body>
+    <h1>파이썬 엔진 테스트</h1>
+    <div id="output">로딩 중...</div>
+
+    <script type="py" target="output">
+import datetime
+from pyscript import display
+
+# output div에 현재 시간 표시
+display(f"현재 브라우저 시간: {datetime.datetime.now()}", append=False)
+print("콘솔 전용 메시지: 엔진 정상 작동 중!")
+    </script>
+</body>
+</html>

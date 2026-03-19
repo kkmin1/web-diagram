@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>위상도 Embed Demo</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 32px 20px 48px;
+                font-family: "Segoe UI", sans-serif;
+                background: #f8fafc;
+                color: #0f172a;
+                line-height: 1.6;
+            }
+
+            .content {
+                max-width: 960px;
+                margin: 0 auto 24px;
+            }
+
+            .embed-box {
+                max-width: 960px;
+                margin: 0 auto 24px;
+                padding: 18px;
+                border: 1px solid #cbd5e1;
+                border-radius: 14px;
+                background: #ffffff;
+                box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            }
+
+            .embed-title {
+                margin: 0 0 12px;
+                font-size: 18px;
+                font-weight: 700;
+            }
+
+            .demo-frame {
+                width: 100%;
+                height: 1320px;
+                border: none;
+                display: block;
+                background: #ffffff;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="content">
+            <h1>웹페이지 내용</h1>
+            <p>여기에 본문 설명이나 다른 콘텐츠가 들어갑니다.</p>
+        </div>
+
+        <div class="embed-box">
+            <iframe
+                class="demo-frame"
+                src="./phase_diagram_demo.html"
+                title="Phase Diagram Demo"
+            ></iframe>
+        </div>
+
+        <div class="content">
+            <h2>웹페이지 내용</h2>
+            <p>
+                iframe 아래에도 일반 웹페이지 내용을 이어서 배치할 수 있습니다.
+            </p>
+        </div>
+    </body>
+</html>

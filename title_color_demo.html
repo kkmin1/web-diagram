@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>위상도 제목 색상 데모</title>
+        <link rel="stylesheet" type="text/css" href="pdj.css" />
+        <style>
+            .panel {
+                max-width: 1100px;
+            }
+
+            h1 {
+                margin: 0 0 10px;
+            }
+
+            .intro {
+                margin: 0 0 24px;
+                color: #526277;
+                line-height: 1.6;
+            }
+
+            .swatch-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 18px;
+            }
+
+            .swatch-card {
+                background: #ffffff;
+                border: 1px solid #d7dee8;
+                border-radius: 14px;
+                padding: 16px;
+                box-shadow: 0 8px 18px rgba(18, 32, 51, 0.06);
+            }
+
+            .swatch-square {
+                width: 100%;
+                aspect-ratio: 1 / 1;
+                border-radius: 12px;
+                border: 1px solid rgba(18, 32, 51, 0.08);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-image:
+                    linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
+                    radial-gradient(circle at top left, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%);
+            }
+
+            .swatch-title {
+                margin: 0;
+                font-size: 30px;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+            }
+
+            .swatch-name {
+                margin: 14px 0 6px;
+                font-size: 15px;
+                font-weight: 700;
+                color: #223247;
+            }
+
+            .swatch-code {
+                margin: 0;
+                font-family: Consolas, monospace;
+                font-size: 14px;
+                color: #5c6c80;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="panel">
+            <h1>위상도 제목 색상 데모</h1>
+            <p class="intro">
+                아래 정사각형 카드에서 색 자체와 실제 제목 느낌을 같이 비교해 보세요.
+                원색 대신 톤 다운된 계열 위주로 골랐습니다.
+            </p>
+
+            <div class="swatch-grid">
+                <section class="swatch-card">
+                    <div class="swatch-square" style="background-color: #334155">
+                        <h1 class="swatch-title" style="color: #f8fafc">위상도</h1>
+                    </div>
+                    <p class="swatch-name">딥 슬레이트 블루</p>
+                    <p class="swatch-code">#334155</p>
+                </section>
+
+                <section class="swatch-card">
+                    <div class="swatch-square" style="background-color: #243b53">
+                        <h1 class="swatch-title" style="color: #f8fafc">위상도</h1>
+                    </div>
+                    <p class="swatch-name">네이비 잉크</p>
+                    <p class="swatch-code">#243B53</p>
+                </section>
+
+                <section class="swatch-card">
+                    <div class="swatch-square" style="background-color: #2c6e6f">
+                        <h1 class="swatch-title" style="color: #f7fbfb">위상도</h1>
+                    </div>
+                    <p class="swatch-name">딥 틸</p>
+                    <p class="swatch-code">#2C6E6F</p>
+                </section>
+
+                <section class="swatch-card">
+                    <div class="swatch-square" style="background-color: #4c5c96">
+                        <h1 class="swatch-title" style="color: #f8f9ff">위상도</h1>
+                    </div>
+                    <p class="swatch-name">뮤트 인디고</p>
+                    <p class="swatch-code">#4C5C96</p>
+                </section>
+
+                <section class="swatch-card">
+                    <div class="swatch-square" style="background-color: #3f5d53">
+                        <h1 class="swatch-title" style="color: #f8fbfa">위상도</h1>
+                    </div>
+                    <p class="swatch-name">포레스트 그레이 그린</p>
+                    <p class="swatch-code">#3F5D53</p>
+                </section>
+
+                <section class="swatch-card">
+                    <div class="swatch-square" style="background-color: #3b3f46">
+                        <h1 class="swatch-title" style="color: #f8fafc">위상도</h1>
+                    </div>
+                    <p class="swatch-name">웜 차콜</p>
+                    <p class="swatch-code">#3B3F46</p>
+                </section>
+            </div>
+        </div>
+    </body>
+</html>

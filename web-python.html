@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>브라우저에서 파이썬 실행하기</title>
+
+    <link rel="stylesheet" href="https://pyscript.net/releases/2026.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2026.1.1/core.js"></script>
+
+    <py-config>
+{
+    "packages": ["pandas", "matplotlib"]
+}
+    </py-config>
+</head>
+<body>
+    <h1>PyScript를 활용한 데이터 시각화</h1>
+    <p id="loading-msg">파이썬 엔진과 라이브러리를 로딩 중입니다. 잠시만 기다려주세요...</p>
+
+    <div id="plot-area"></div>
+
+    <script type="py" target="plot-area">
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import font_manager, rcParams
+from js import document
+from pyodide.http import pyfetch
+from pyscript import display
+
+FONT_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf"
+FONT_PATH = "/tmp/NotoSansCJKkr-Regular.otf"
+
+async def setup_korean_font():
+    # Pyodide 런타임에는 한글 폰트가 기본 탑재되지 않을 수 있어 웹폰트를 등록한다.
+    try:
+        response = await pyfetch(FONT_URL)
+        if response.ok:
+            with open(FONT_PATH, "wb") as f:
+                f.write(await response.bytes())
+            font_manager.fontManager.addfont(FONT_PATH)
+            font_name = font_manager.FontProperties(fname=FONT_PATH).get_name()
+            rcParams["font.family"] = font_name
+    except Exception:
+        # 폰트 다운로드 실패 시 기본 폰트로 계속 실행
+        pass
+    rcParams["axes.unicode_minus"] = False
+
+await setup_korean_font()
+
+# 1. 샘플 데이터 생성 (Pandas 활용)
+data = {
+    "분기": ["1분기", "2분기", "3분기", "4분기"],
+    "매출": [150, 230, 180, 420],
+}
+df = pd.DataFrame(data)
+
+# 2. 시각화 (Matplotlib 활용)
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.bar(df["분기"], df["매출"], color="skyblue")
+ax.set_title("2026년 분기별 매출 현황")
+ax.set_xlabel("분기")
+ax.set_ylabel("매출 (억원)")
+
+# 3. HTML 요소에 출력
+display(fig, append=False)
+loading = document.getElementById("loading-msg")
+if loading:
+    loading.remove()
+print("파이썬 코드 실행 완료!")
+    </script>
+</body>
+</html>

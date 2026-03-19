@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>위상도(Phase Diagram) - JavaScript</title>
+  <link rel="stylesheet" type="text/css" href="eco-math.css">
+  <link rel="stylesheet" type="text/css" href="footnote.css">
+  <script src="pdj.js" defer></script>
+
+  <link rel="stylesheet" type="text/css" href="pdj.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <div class="panel">
+    <h1>위상도(Phase Diagram)</h1>
+    <p class="desc">x와 y를 사용하여 미분방정식 수식을 입력하세요. (예: -2*x, sin(x)-y, exp(x/10)-4)</p>
+    <br>
+
+    <div class="controls">
+      <div class="input-group">
+        <label for="exprX">\(\frac{dx}{dt} = \)</label>
+        <input id="exprX" type="text" value="0.5*x + 0.5*y - 15" placeholder="예: -2*x">
+      </div>
+      <div class="input-group">
+        <label for="exprY">\(\frac{dy}{dt} = \)</label>
+        <input id="exprY" type="text" value="x - 0.5*y" placeholder="예: 2*x - 4*y + 32">
+      </div>
+    </div>
+
+    <div class="range-controls">
+      <div class="input-group">
+        <label>x축 범위 :</label>
+        <div class="range-input-wrapper">
+          <span>min</span>
+          <input id="xMin" type="number" value="-10" step="any">
+          <span style="margin-left: 8px;">max</span>
+          <input id="xMax" type="number" value="30" step="any">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>y축 범위 :</label>
+        <div class="range-input-wrapper">
+          <span>min</span>
+          <input id="yMin" type="number" value="0" step="any">
+          <span style="margin-left: 8px;">max</span>
+          <input id="yMax" type="number" value="40" step="any">
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="renderBtn" type="button">그리기</button>
+    </div>
+
+    <canvas id="phaseCanvas" width="920" height="700" aria-label="위상도"></canvas>
+  </div>
+
+</body>
+
+</html>
