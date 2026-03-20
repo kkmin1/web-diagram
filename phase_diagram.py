@@ -6,26 +6,6 @@ import matplotlib.patches as mpatches
 from matplotlib.legend_handler import HandlerPatch
 from scipy.integrate import odeint
 
-# ── 한글 폰트 설정 ──────────────────────────────────────────────
-import platform
-
-def set_korean_font():
-    system = platform.system()
-    if system == 'Windows':
-        candidates = ['Malgun Gothic', '맑은 고딕']
-    elif system == 'Darwin':
-        candidates = ['AppleGothic', 'Apple SD Gothic Neo']
-    else:  # Linux (SageMath 서버 포함)
-        candidates = ['NanumGothic', 'NanumBarunGothic', 'UnDotum', 'DejaVu Sans']
-
-    available = {f.name for f in fm.fontManager.ttflist}
-    for name in candidates:
-        if name in available:
-            plt.rcParams['font.family'] = name
-            break
-    plt.rcParams['axes.unicode_minus'] = False
-
-set_korean_font()
 
 # ── 화살표를 범례 아이콘으로 그리는 커스텀 핸들러 ──────────────
 class HandlerArrow(HandlerPatch):
@@ -140,7 +120,7 @@ for line in lines:
 
 # ── 범례: 빨간 화살표 + 파란 선 ────────────────────────────────
 vector_field_handle = mpatches.FancyArrow(
-    0, 0, 1, 0, color='r', label='벡터장'
+    0, 0, 1, 0, color='r', label='vector field'
 )
 trajectory_handle = mlines.Line2D([], [], color='b', label='Trajectory')
 
